@@ -14,13 +14,42 @@ $PidRoot = Join-Path $RuntimeRoot "pids"
 
 New-Item -ItemType Directory -Force $LogRoot, $PidRoot | Out-Null
 
+function Invoke-Checked {
+    param(
+        [string]$Description,
+        [scriptblock]$Command
+    )
+
+    & $Command
+    if ($LASTEXITCODE -ne 0) {
+        throw "$Description failed with exit code $LASTEXITCODE."
+    }
+}
+
 function Stop-RocketServers {
+    $rocketPorts = 8000, 8001, 8080
+
+    Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue |
+        Where-Object { $_.LocalPort -in $rocketPorts } |
+        Select-Object -ExpandProperty OwningProcess -Unique |
+        ForEach-Object {
+            Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue
+        }
+
     Get-ChildItem $PidRoot -Filter "*.pid" -ErrorAction SilentlyContinue | ForEach-Object {
         $savedPid = Get-Content $_.FullName -ErrorAction SilentlyContinue
         if ($savedPid) {
             Stop-Process -Id ([int]$savedPid) -Force -ErrorAction SilentlyContinue
         }
         Remove-Item $_.FullName -Force -ErrorAction SilentlyContinue
+    }
+
+    Start-Sleep -Seconds 2
+
+    $remainingPorts = Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue |
+        Where-Object { $_.LocalPort -in $rocketPorts }
+    if ($remainingPorts) {
+        throw "One or more Rocket Server ports could not be stopped."
     }
 }
 
@@ -52,13 +81,15 @@ function Install-And-Build {
     if (-not (Test-Path $venvPython)) {
         & $python -m venv (Join-Path $BookingRoot ".venv")
     }
-    & $venvPython -m pip install --disable-pip-version-check -r (Join-Path $BookingRoot "requirements.txt")
+    Invoke-Checked "Python dependency installation" {
+        & $venvPython -m pip install --disable-pip-version-check -r (Join-Path $BookingRoot "requirements.txt")
+    }
 
     Push-Location $FrontendRoot
     try {
-        & $npm ci
-        & $npm run lint
-        & $npm run build
+        Invoke-Checked "Frontend dependency installation" { & $npm ci }
+        Invoke-Checked "Frontend lint" { & $npm run lint }
+        Invoke-Checked "Frontend build" { & $npm run build }
     }
     finally {
         Pop-Location
@@ -66,7 +97,9 @@ function Install-And-Build {
 
     Push-Location $BackendRoot
     try {
-        & (Join-Path $BackendRoot "mvnw.cmd") clean package -DskipTests
+        Invoke-Checked "Spring build" {
+            & (Join-Path $BackendRoot "mvnw.cmd") clean package -DskipTests
+        }
     }
     finally {
         Pop-Location
@@ -105,7 +138,7 @@ try {
     $hasUpdate = $Force
 
     if (-not $Force) {
-        & git fetch origin
+        Invoke-Checked "Git fetch" { & git fetch origin }
         $branch = (& git branch --show-current).Trim()
         $remoteRef = "origin/$branch"
         & git rev-parse --verify $remoteRef 2>$null | Out-Null
@@ -131,7 +164,7 @@ try {
     Stop-RocketServers
 
     if (-not $Force) {
-        & git merge --ff-only $remoteRef
+        Invoke-Checked "Git update" { & git merge --ff-only $remoteRef }
     }
 
     Install-And-Build

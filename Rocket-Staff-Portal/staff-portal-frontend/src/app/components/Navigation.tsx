@@ -1,14 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useInbox } from "../context/InboxContext";
 import { useCurrentUser } from "../context/CurrentUserContext";
 import RocketLogo from "./RocketBrand";
 
 const API = "";
+const STAFF_PORTAL = "https://rocketpubserver.co.uk/staff";
 const BOOKING_PORTAL = process.env.NEXT_PUBLIC_BOOKING_PORTAL_URL || "https://rocketpubserver.co.uk/booking/dashboard";
+
+function staffPortalUrl(path: string) {
+  return `${STAFF_PORTAL}${path}`;
+}
 
 const links = [
   { href: "/rota", label: "Rota", icon: "calendar" },
@@ -40,7 +45,6 @@ function roleLabel(role: "STAFF" | "MANAGER" | "ADMIN") {
 
 export default function Navigation() {
   const pathname = usePathname();
-  const router = useRouter();
   const { count } = useInbox();
   const { currentUser, clearCurrentUser } = useCurrentUser();
 
@@ -63,7 +67,7 @@ export default function Navigation() {
       await fetch(`${API}/api/auth/logout`, { method: "POST", credentials: "include" });
     } finally {
       clearCurrentUser();
-      router.replace("/login");
+      window.location.assign(staffPortalUrl("/login"));
     }
   }
 
@@ -110,7 +114,7 @@ export default function Navigation() {
                 <a href={BOOKING_PORTAL}>Booking Portal</a>
 
                 <Link
-                  href="/settings"
+                  href={staffPortalUrl("/settings")}
                   className={pathname === "/settings" ? "active" : ""}
                 >
                   Account settings
@@ -131,7 +135,7 @@ export default function Navigation() {
 
         <nav className="sidebar-links">
           {visibleLinks.map(link => (
-            <Link key={link.href} href={link.href} className={pathname === link.href ? "active" : ""}>
+            <Link key={link.href} href={staffPortalUrl(link.href)} className={pathname === link.href ? "active" : ""}>
               <NavIcon name={link.icon} />
               <span>{link.label}</span>
               {link.href === "/inbox" && badge}
@@ -150,7 +154,7 @@ export default function Navigation() {
 
       <nav className="mobile-bottom-nav">
         {[...visibleLinks, { href: "/settings", label: "Account" }].map(link => (
-          <Link key={link.href} href={link.href} className={pathname === link.href ? "active" : ""}>
+          <Link key={link.href} href={staffPortalUrl(link.href)} className={pathname === link.href ? "active" : ""}>
             {link.label === "Staff Diary" ? "Diary" : link.label}
             {link.href === "/inbox" && badge}
             {link.href === "/settings" && !currentUser?.emailVerified && (

@@ -1351,9 +1351,9 @@ h1 {
   width: 100%;
 
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(22rem, 25rem);
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 21rem);
 
-  gap: 1.5rem;
+  gap: 1.25rem;
 
   align-items: start;
 }
