@@ -161,7 +161,13 @@ function Start-RocketServers {
     Start-HiddenProcess "spring" $java @("-jar", $jar.FullName) $BackendRoot
     Start-HiddenProcess "frontend" $npm @("run", "start") $FrontendRoot
 
-    Start-Sleep -Seconds 4
+    for ($attempt = 1; $attempt -le 30; $attempt++) {
+        if (Test-RocketServersRunning) {
+            break
+        }
+        Start-Sleep -Seconds 2
+    }
+
     if (-not (Test-RocketServersRunning)) {
         $listeningPorts = @(Get-RocketListeners | Select-Object -ExpandProperty LocalPort -Unique)
         $missingPorts = @($RocketPorts | Where-Object { $_ -notin $listeningPorts })
