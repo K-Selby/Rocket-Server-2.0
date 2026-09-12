@@ -43,3 +43,6 @@ data/microsoft_email_token*.json
 .vscode/
 *.swp
 *~
+
+# Windows background process IDs and logs
+runtime/

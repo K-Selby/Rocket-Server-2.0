@@ -18,7 +18,7 @@ import jakarta.servlet.http.HttpSession;
 @RestController
 @RequestMapping("/api/auth")
 @CrossOrigin(
-        origins = "http://localhost:3000",
+        origins = "http://localhost:8000",
         allowCredentials = "true"
 )
 public class AuthController {

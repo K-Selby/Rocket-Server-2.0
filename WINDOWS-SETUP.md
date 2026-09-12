@@ -1,67 +1,33 @@
-# Rocket Server 2.0 on Windows 10
+# Windows setup
 
-Rocket Server runs as three local processes: one Flask server for the Customer
-and Booking portals on port 8000, one Next.js frontend for the Staff Portal on
-port 3000, and one Spring Boot API for login and staff features on port 8080.
+Open PowerShell as Administrator in the Rocket Server folder and allow local
+scripts for the current Windows account:
 
-## Install the required software
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+```
 
-Install Git, Python 3, Node.js LTS, and Java 21. During Python installation,
-enable the option that adds Python to PATH. Restart PowerShell after installing
-them.
+Run the one-time setup:
 
-Check the installations:
+```powershell
+.\setup-windows.ps1
+```
 
-    git --version
-    py --version
-    node --version
-    npm --version
-    java --version
+The setup installs Git, Python 3.12, Node.js LTS, npm, and Java 21 when they are
+missing. It then installs project dependencies, builds the Staff Portal, and
+starts Flask, Spring, and Next.js in the background.
 
-## Download and prepare the project
+For normal updates, run:
 
-Clone the repository, open PowerShell in the Rocket-Server-2.0 folder, and run:
+```powershell
+.\update-windows.ps1
+```
 
-    Set-ExecutionPolicy -Scope Process Bypass
-    .\setup-windows.ps1
+The updater checks GitHub first. When there is no new commit, it leaves the
+running server alone and exits. When an update exists, it stops the background
+processes, fast-forwards the repository, checks dependencies, rebuilds the
+applications, and starts them again. Output is stored under `runtime\logs`.
 
-The setup script creates the Python virtual environment and installs the Python
-and Node packages. Maven is supplied by mvnw.cmd.
-
-## Copy the live data
-
-Git deliberately excludes the live database and Microsoft sign-in token.
-Transfer these files privately from the Mac into the Windows project's data
-folder:
-
-    data\rocket_integration.db
-    data\microsoft_email_token.json
-
-Do not copy rocket_integration.db-shm or rocket_integration.db-wal while the Mac
-servers are running. Stop Spring and Flask first so SQLite writes everything
-into the main database file.
-
-## Add the Microsoft Entra settings
-
-Set the values once in PowerShell, replacing the examples with the Entra values:
-
-    setx MICROSOFT_CLIENT_ID "your-client-id"
-    setx MICROSOFT_CLIENT_SECRET "your-client-secret"
-    setx MICROSOFT_TENANT_ID "consumers"
-    setx MICROSOFT_REDIRECT_URI "http://localhost:8080/api/email/microsoft/callback"
-    setx ROCKET_EMAIL_FROM "rocketpubserver@outlook.com"
-
-Close PowerShell and open it again so the saved values become available.
-
-## Start Rocket Server
-
-From the project root:
-
-    Set-ExecutionPolicy -Scope Process Bypass
-    .\start-windows.ps1
-
-Three PowerShell windows will open. Wait until each server reports that it is
-ready, then visit http://localhost:3000/login.
-
-The Customer Portal is at http://localhost:8000. The Booking Portal is available
-through the Staff Portal after login.
+The public Cloudflare tunnel can continue pointing at `http://localhost:8000`.
+The browser routes are `/` and `/customer` for customers, `/booking` for the
+Booking Portal, and `/staff` for the Staff Portal.

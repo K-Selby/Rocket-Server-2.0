@@ -11,7 +11,8 @@ npm install
 npm run dev
 ```
 
-The frontend runs at `http://localhost:3000`.
+The frontend runs as the local gateway at `http://localhost:8000`, with the
+Staff Portal available at `http://localhost:8000/staff`.
 
 ## Backend
 

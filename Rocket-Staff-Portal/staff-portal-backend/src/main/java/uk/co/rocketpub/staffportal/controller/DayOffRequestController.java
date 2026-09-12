@@ -19,7 +19,7 @@ import uk.co.rocketpub.staffportal.service.DayOffRequestService;
 
 @RestController
 @RequestMapping("/api/day-off-requests")
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "http://localhost:8000")
 public class DayOffRequestController {
 
     private final DayOffRequestService service;

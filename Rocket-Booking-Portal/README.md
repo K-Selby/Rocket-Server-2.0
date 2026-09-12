@@ -24,7 +24,8 @@ The Flask server provides:
 - shared images and menus under http://localhost:8000/assets
 
 Protected Booking Portal pages require a valid Staff Portal session. Start the
-Spring backend on port 8080 and the Staff frontend on port 3000 before signing
+Spring backend on port 8080, Flask internally on port 8001, and the Staff
+frontend gateway on port 8000 before signing
 in.
 
 ## Configuration

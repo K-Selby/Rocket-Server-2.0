@@ -1,10 +1,16 @@
 # Rocket Server 2.0 local development
 
-The project currently runs as three local processes:
+The project runs as three local processes behind one browser address:
 
-- Customer and Booking portals (one Flask server): `http://localhost:8000`
-- Staff Portal frontend (Next.js): `http://localhost:3000`
+- Customer and Booking portals (one Flask server): `http://localhost:8001`
+- Staff Portal frontend and local gateway (Next.js): `http://localhost:8000`
 - Staff Portal API and authentication (Spring): `http://localhost:8080`
+
+Use these browser addresses:
+
+- Customer Portal: `http://localhost:8000/` or `http://localhost:8000/customer`
+- Booking Portal: `http://localhost:8000/booking`
+- Staff Portal: `http://localhost:8000/staff`
 
 The source folders are:
 
@@ -63,7 +69,7 @@ python3 run.py
 ```
 
 The public Customer Portal is available at `http://localhost:8000`. Open
-`http://localhost:3000/login`, sign in, and use the Booking Portal link to open
+`http://localhost:8000/staff/login`, sign in, and use the Booking Portal link to open
 `http://localhost:8000/booking/dashboard`.
 Opening a protected Flask page without a valid Spring session redirects to the
 Staff Portal login screen.
@@ -71,8 +77,9 @@ Staff Portal login screen.
 Optional environment variables:
 
 ```bash
-export ROCKET_STAFF_PORTAL_URL=http://localhost:3000
+export ROCKET_STAFF_PORTAL_URL=http://localhost:8000/staff
 export ROCKET_STAFF_API_URL=http://localhost:8080
+export ROCKET_FLASK_PORT=8001
 export NEXT_PUBLIC_BOOKING_PORTAL_URL=http://localhost:8000/booking/dashboard
 ```
 

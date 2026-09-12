@@ -39,7 +39,7 @@ public class RocketEmailService {
     @Value("${rocket.email.client-id:}") private String clientId;
     @Value("${rocket.email.client-secret:}") private String clientSecret;
     @Value("${rocket.email.redirect-uri:http://localhost:8080/api/email/microsoft/callback}") private String redirectUri;
-    @Value("${rocket.email.frontend-url:http://localhost:3000}") private String frontendUrl;
+    @Value("${rocket.email.frontend-url:http://localhost:8000/staff}") private String frontendUrl;
     @Value("${rocket.email.sender:rocketpubserver@outlook.com}") private String sender;
     @Value("${rocket.email.token-path:../../data/microsoft_email_token.json}") private String tokenPath;
 

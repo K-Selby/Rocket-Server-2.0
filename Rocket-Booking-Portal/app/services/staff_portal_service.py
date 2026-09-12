@@ -6,7 +6,7 @@ import requests
 def staff_portal_url(path=""):
     base_url = os.environ.get(
         "ROCKET_STAFF_PORTAL_URL",
-        "http://localhost:3000",
+        "http://localhost:8000/staff",
     ).rstrip("/")
 
     return f"{base_url}/{path.lstrip('/')}" if path else base_url

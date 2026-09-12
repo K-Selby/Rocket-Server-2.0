@@ -4,6 +4,7 @@ from app import create_app
 
 
 app = create_app()
+port = int(os.environ.get("ROCKET_FLASK_PORT", "8001"))
 
 
 if __name__ == "__main__":
@@ -12,7 +13,7 @@ if __name__ == "__main__":
     if debug_mode:
         app.run(
             host="0.0.0.0",
-            port=8000,
+            port=port,
             debug=True,
         )
     else:
@@ -21,7 +22,7 @@ if __name__ == "__main__":
         serve(
             app,
             host="0.0.0.0",
-            port=8000,
+            port=port,
             threads=8,
             channel_timeout=120,
         )
