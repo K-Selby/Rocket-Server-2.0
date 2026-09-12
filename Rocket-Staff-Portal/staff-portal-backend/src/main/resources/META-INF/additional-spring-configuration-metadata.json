@@ -1,0 +1,34 @@
+{
+  "properties": [
+    {
+      "name": "rocket.email.client-id",
+      "type": "java.lang.String",
+      "description": "Microsoft Entra application client ID used by Rocket Email."
+    },
+    {
+      "name": "rocket.email.client-secret",
+      "type": "java.lang.String",
+      "description": "Microsoft Entra application client secret used by Rocket Email."
+    },
+    {
+      "name": "rocket.email.redirect-uri",
+      "type": "java.lang.String",
+      "description": "Staff Portal callback URI registered with Microsoft Entra."
+    },
+    {
+      "name": "rocket.email.frontend-url",
+      "type": "java.lang.String",
+      "description": "Staff Portal frontend URL used for CORS and OAuth redirects."
+    },
+    {
+      "name": "rocket.email.sender",
+      "type": "java.lang.String",
+      "description": "Mailbox displayed and used as the Rocket Email sender."
+    },
+    {
+      "name": "rocket.email.token-path",
+      "type": "java.lang.String",
+      "description": "Path to the local Microsoft refresh-token file."
+    }
+  ]
+}

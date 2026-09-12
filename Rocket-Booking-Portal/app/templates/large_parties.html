@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Large Party Enquiries | Rocket Pub Server{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <h1>Large party enquiries</h1>
+        <p>Open enquiries can be changed as details are confirmed over time.</p>
+    </div>
+
+    <div class="heading-actions">
+        <a class="button secondary"
+           href="{{ url_for('main.archive') }}">
+            Archive
+        </a>
+        <a class="button"
+           href="{{ url_for('main.new_large_party') }}">
+            New large party enquiry
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Enquiries</h2>
+
+    {% if inquiries %}
+        <div class="inquiry-list">
+            {% for inquiry in inquiries %}
+                <div class="inquiry-row">
+                    <div>
+                        <strong>{{ inquiry.customer_name }}</strong>
+                        <div class="muted">
+                            {{ inquiry.party_size }} people
+                            {% if inquiry.number_of_children %}
+                                · {{ inquiry.number_of_children }} under 13
+                            {% endif %}
+                            {% if inquiry.event_date %}
+                                · {{ inquiry.event_date.strftime("%d/%m/%Y") }}
+                            {% else %}
+                                · Date not confirmed
+                            {% endif %}
+                            {% if inquiry.event_time %}
+                                · {{ inquiry.event_time.strftime("%H:%M") }}
+                                {% if inquiry.reserve_for_rest_of_day %}
+                                    · Reserved for rest of day
+                                {% elif inquiry.expected_end_time %}
+                                    – {{ inquiry.expected_end_time.strftime("%H:%M") }}
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div>
+                        <span class="badge">{{ inquiry.status }}</span>
+                        {% if inquiry.food_type %}<span class="badge">{{ inquiry.food_type }}</span>{% endif %}
+                        {% if inquiry.menu_option %}<span class="badge">{{ inquiry.menu_option.name }}</span>{% endif %}
+                    </div>
+
+                    <div>
+                        <strong>Total £{{ "%.2f"|format(inquiry.total_amount) }}</strong>
+                        {% if inquiry.deposit_paid_amount %}
+                            <div class="muted">
+                                Deposit £{{ "%.2f"|format(inquiry.deposit_paid_amount) }}
+                                · {{ inquiry.deposit_payment_method }}
+                                · taken by {{ inquiry.deposit_taken_by }}
+                                {% if inquiry.deposit_paid_date %}
+                                    · paid {{ inquiry.deposit_paid_date.strftime("%d/%m/%Y") }}
+                                {% endif %}
+                            </div>
+                            <div class="muted">
+                                Remainder £{{ "%.2f"|format(inquiry.total_remainder) }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="large-party-row-actions">
+                        <a class="small-link"
+                           href="{{ url_for('main.edit_large_party', inquiry_id=inquiry.id) }}">
+                            Edit enquiry
+                        </a>
+
+                        <form method="post"
+                              action="{{ url_for('main.cancel_large_party', inquiry_id=inquiry.id) }}"
+                              onsubmit="return confirm('Cancel this large party? It will move to Archive.');">
+                            <button class="link-button danger" type="submit">
+                                Cancel
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="muted">No large party enquiries yet.</p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>Buffet packages</h2>
+
+    <div class="buffet-grid">
+        {% for option in options %}
+            <div class="buffet-card">
+                <div class="buffet-option">Option {{ option.option_number }}</div>
+                <h3>{{ option.name }}</h3>
+                <strong>£{{ "%.2f"|format(option.price_per_head) }} per head</strong>
+
+                <ul>
+                    {% for item in option.items_text.split('\n') %}
+                        <li>{{ item }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endfor %}
+    </div>
+
+    <p class="field-note">
+        Additional hot dishes are £6.50 per head with a minimum of 25 people.
+        Custom dishes/prices can also be entered on an enquiry.
+    </p>
+</div>
+{% endblock %}

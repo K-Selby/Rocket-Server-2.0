@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" href="{{ url_for('shared_asset', filename='images/favicon.png', v='1') }}">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Rocket Booking Portal{% endblock %}</title>
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css', v='10.10.0') }}">
+</head>
+<body>
+<header class="topbar">
+    <a class="brand"
+       href="{{ url_for('main.dashboard') }}"
+       aria-label="Rocket Booking Portal dashboard">
+        <span class="brand-logo-frame">
+            <img src="{{ url_for('shared_asset', filename='images/rocket-pub-header-logo.png') }}"
+                 alt="The Rocket Pub Liverpool logo">
+        </span>
+
+        <span class="brand-copy">
+            <strong>Rocket Booking Portal</strong>
+            <small>The Rocket Pub · Liverpool</small>
+        </span>
+    </a>
+
+    {% if current_user %}
+    <nav class="main-nav">
+        <a class="{% if request.endpoint == 'main.dashboard' %}active{% endif %}"
+           href="{{ url_for('main.dashboard') }}">
+            Dashboard
+        </a>
+
+        <details class="nav-menu"
+                 data-exclusive-nav
+                 {% if request.endpoint in ['main.bookings','main.new_booking','main.edit_booking','main.large_parties','main.new_large_party','main.edit_large_party','main.customers','main.edit_customer'] %}data-current="true"{% endif %}>
+            <summary>Bookings</summary>
+            <div class="nav-menu-panel">
+                <a class="{% if request.endpoint in ['main.bookings','main.new_booking','main.edit_booking'] %}active{% endif %}"
+                   href="{{ url_for('main.bookings') }}">
+                    Table Bookings
+                </a>
+
+                <a class="{% if request.endpoint in ['main.large_parties','main.new_large_party','main.edit_large_party'] %}active{% endif %}"
+                   href="{{ url_for('main.large_parties') }}">
+                    Large Parties
+                </a>
+
+                <a class="{% if request.endpoint in ['main.customers','main.edit_customer'] %}active{% endif %}"
+                   href="{{ url_for('main.customers') }}">
+                    Customers
+                </a>
+            </div>
+        </details>
+
+        <a class="{% if request.endpoint in ['main.allergen_menu','main.allergen_new','main.allergen_edit'] %}active{% endif %}"
+           href="{{ url_for('main.allergen_menu') }}">
+            Allergen Menu
+        </a>
+
+        {% if current_user.is_manager %}
+            <details class="nav-menu management-menu"
+                     data-exclusive-nav
+                     {% if request.endpoint in ['main.tables','main.archive','main.table_map','main.table_layout','main.admin_health','main.admin_create_backup','main.admin_download_backup'] %}data-current="true"{% endif %}>
+                <summary>
+                    Management
+                </summary>
+
+                <div class="nav-menu-panel">
+                    <a class="{% if request.endpoint == 'main.tables' %}active{% endif %}"
+                       href="{{ url_for('main.tables') }}">
+                        Tables
+                    </a>
+
+                    <a class="{% if request.endpoint == 'main.archive' %}active{% endif %}"
+                       href="{{ url_for('main.archive') }}">
+                        Archive
+                    </a>
+
+                    <div class="nav-menu-divider"></div>
+
+                    <a class="{% if request.endpoint == 'main.table_map' %}active{% endif %}"
+                       href="{{ url_for('main.table_map') }}">
+                        Table Map
+                    </a>
+
+                    <a class="{% if request.endpoint == 'main.table_layout' %}active{% endif %}"
+                       href="{{ url_for('main.table_layout') }}">
+                        Edit Table Layout
+                    </a>
+
+                    {% if current_user.is_admin %}
+                        <a class="{% if request.endpoint and request.endpoint.startswith('main.admin_') %}active{% endif %}"
+                           href="{{ url_for('main.admin_health') }}">
+                            Server Health
+                        </a>
+                    {% endif %}
+                </div>
+            </details>
+        {% endif %}
+
+        <details class="account-dropdown"
+                 data-exclusive-nav>
+            <summary>
+                <span class="account-name">{{ current_user.username }}</span>
+                <span class="account-role">{{ current_user.role|title }}</span>
+            </summary>
+
+            <div class="nav-menu-panel account-panel">
+                <a href="{{ staff_portal_url }}">
+                    Staff Portal
+                </a>
+
+                <form method="post"
+                      action="{{ url_for('main.logout') }}">
+                    <button type="submit"
+                            class="account-logout-button">
+                        Log out
+                    </button>
+                </form>
+            </div>
+        </details>
+    </nav>
+    {% endif %}
+</header>
+
+<main class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+</main>
+
+<script src="{{ url_for('static', filename='js/app.js', v='10.9.0') }}"></script>
+</body>
+</html>

@@ -1,0 +1,394 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard | Rocket Pub Server{% endblock %}
+
+{% block content %}
+<div id="dashboard-booking-state"
+     data-dashboard-date="{{ selected_date.isoformat() }}"></div>
+
+<div class="page-heading">
+    <div>
+        <h1>Dashboard</h1>
+        <p>{{ selected_date.strftime("%A %d %B %Y") }}</p>
+    </div>
+
+    <a class="button" href="{{ url_for('main.new_booking') }}">New booking</a>
+</div>
+
+<div class="date-nav">
+    <a class="button secondary"
+       href="{{ url_for('main.dashboard', date=previous_date.isoformat()) }}">
+        ← Previous day
+    </a>
+
+    <form method="get">
+        <input type="date"
+               name="date"
+               value="{{ selected_date.isoformat() }}"
+               onchange="this.form.submit()">
+    </form>
+
+    <a class="button secondary"
+       href="{{ url_for('main.dashboard', date=next_date.isoformat()) }}">
+        Next day →
+    </a>
+</div>
+
+
+{% if reminders %}
+<div class="card reminder-card">
+    <h2>Reminders for {{ selected_date.strftime("%A %d %B") }}</h2>
+    {% for reminder in reminders %}
+        <div class="reminder-dashboard-row">
+            <div>
+                <div class="dashboard-reminder-heading">
+                    <strong>{{ reminder.inquiry.customer_name }}</strong>
+                    {% if reminder.reminder_kind == "deposit_due" %}
+                        <span class="reminder-type-badge deposit-reminder-badge">
+                            Deposit due
+                        </span>
+                    {% else %}
+                        <span class="reminder-type-badge">
+                            Follow-up
+                        </span>
+                    {% endif %}
+                </div>
+
+                <div>{{ reminder.note }}</div>
+
+                <div class="muted">
+                    Large party enquiry
+                    {% if reminder.inquiry.event_date %}
+                        · event {{ reminder.inquiry.event_date.strftime("%d/%m/%Y") }}
+                    {% endif %}
+                </div>
+            </div>
+
+            <a class="small-link"
+               href="{{ url_for('main.edit_large_party', inquiry_id=reminder.inquiry.id) }}">
+                Open enquiry
+            </a>
+        </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if repeat_prompts %}
+<div class="card repeat-card">
+    <h2>Repeat bookings to confirm for {{ repeat_target_date.strftime("%A %d %B") }}</h2>
+    <p class="muted">
+        These repeat bookings are due next week. Confirm one to create the
+        booking and allocate a table, or skip just this occurrence.
+    </p>
+
+    {% for rule in repeat_prompts %}
+        <div class="repeat-row">
+            <div>
+                <strong>{{ rule.booking_time.strftime("%H:%M") }} — {{ rule.customer.name }}</strong>
+                <div class="muted">
+                    {{ rule.party_size }} people
+                    {% if rule.number_of_children %}
+                        · {{ rule.number_of_children }} under 13
+                    {% endif %}
+                    · {% if rule.is_eating_food %}Eating{% else %}Drinks only{% endif %}
+                </div>
+            </div>
+
+            <div class="row-actions">
+                <form method="post"
+                      action="{{ url_for('main.confirm_repeat_booking', repeat_id=rule.id) }}">
+                    <input type="hidden"
+                           name="occurrence_date"
+                           value="{{ repeat_target_date.isoformat() }}">
+                    <button class="button" type="submit">Confirm</button>
+                </form>
+
+                <form method="post"
+                      action="{{ url_for('main.skip_repeat_booking', repeat_id=rule.id) }}">
+                    <input type="hidden"
+                           name="occurrence_date"
+                           value="{{ repeat_target_date.isoformat() }}">
+                    <button class="button secondary" type="submit">Skip this time</button>
+                </form>
+
+                <a class="small-link"
+                   href="{{ url_for('main.edit_repeat_booking', repeat_id=rule.id) }}">
+                    Edit repeat
+                </a>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+
+{% if dashboard_large_parties %}
+<div class="card dashboard-large-parties-card">
+    <div class="dashboard-section-heading">
+        <div>
+            <h2>Large parties</h2>
+            <p class="muted">
+                Large-party enquiries taking place on this day.
+            </p>
+        </div>
+    </div>
+
+    <div class="dashboard-large-party-list">
+        {% for inquiry in dashboard_large_parties %}
+            <div class="dashboard-large-party-row">
+                <div class="large-party-time-block">
+                    {% if inquiry.event_time %}
+                        <strong>{{ inquiry.event_time.strftime("%H:%M") }}</strong>
+                        {% if inquiry.reserve_for_rest_of_day %}
+                            <span>rest of day</span>
+                        {% elif inquiry.expected_end_time %}
+                            <span>to {{ inquiry.expected_end_time.strftime("%H:%M") }}</span>
+                        {% endif %}
+                    {% else %}
+                        <strong>TBC</strong>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <strong>{{ inquiry.customer_name }}</strong>
+                    <div class="muted">
+                        {{ inquiry.party_size }} people
+                        {% if inquiry.occasion %} · {{ inquiry.occasion }}{% endif %}
+                        · {{ inquiry.status }}
+                    </div>
+
+                    <div class="large-party-reservation-tags">
+                        {% for link in inquiry.reserved_areas %}
+                            <span class="badge large-party-badge">
+                                {{ link.area.name }}
+                            </span>
+                        {% endfor %}
+
+                        {% for link in inquiry.reserved_tables %}
+                            <span class="badge large-party-badge">
+                                T{{ link.table.number }}
+                            </span>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="large-party-finance-summary">
+                    <div class="large-party-finance-line">
+                        <span>Total</span>
+                        <strong>£{{ "%.2f"|format(inquiry.total_amount) }}</strong>
+                    </div>
+
+                    <div class="large-party-finance-line">
+                        <span>Deposit paid</span>
+                        <strong>£{{ "%.2f"|format(inquiry.deposit_paid_amount or 0) }}</strong>
+                    </div>
+
+                    <div class="large-party-finance-line outstanding-balance-line">
+                        <span>Outstanding</span>
+                        <strong>£{{ "%.2f"|format(inquiry.total_remainder) }}</strong>
+                    </div>
+
+                    {% if inquiry.deposit_due_date and inquiry.deposit_balance > 0 %}
+                        <small>
+                            Deposit expected {{ inquiry.deposit_due_date.strftime("%d/%m/%Y") }}
+                        </small>
+                    {% endif %}
+                </div>
+
+                <a class="small-link"
+                   href="{{ url_for('main.edit_large_party', inquiry_id=inquiry.id) }}">
+                    Open enquiry
+                </a>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<div class="card">
+    <h2>Bookings</h2>
+
+    {% if bookings %}
+        <div class="booking-list">
+            {% for booking in bookings %}
+                {% set booking_end_minutes = booking.duration_minutes %}
+                <div class="booking-row dashboard-booking-row"
+                     data-booking-id="{{ booking.id }}"
+                     data-booking-date="{{ booking.booking_date.isoformat() }}"
+                     data-start-time="{{ booking.booking_time.strftime('%H:%M') }}"
+                     data-duration="{{ booking.duration_minutes }}"
+                     data-completed="{{ '1' if booking.status == 'Completed' else '0' }}">
+
+                    <div class="dashboard-booking-time">
+                        <strong>{{ booking.booking_time.strftime("%H:%M") }}</strong>
+                        <span class="dashboard-booking-state-label">
+                            {% if booking.status == "Completed" %}
+                                Finished
+                            {% else %}
+                                Upcoming
+                            {% endif %}
+                        </span>
+                    </div>
+
+                    <div class="dashboard-booking-main">
+                        <strong>{{ booking.customer.name }}</strong>
+
+                        <div class="dashboard-booking-full-details">
+                            <div class="muted">
+                                {{ booking.party_size }} people
+                                {% if booking.number_of_children %}
+                                    · {{ booking.number_of_children }} under 13
+                                {% endif %}
+                                · {% if booking.is_eating_food %}Eating{% else %}Drinks only{% endif %}
+                                · {{ booking.duration_minutes // 60 }}h
+                                {% if booking.duration_minutes % 60 %}
+                                    {{ booking.duration_minutes % 60 }}m
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-booking-tables">
+                        {% for table in booking.tables %}
+                            <span class="badge">T{{ table.number }}</span>
+                        {% endfor %}
+                    </div>
+
+                    <div class="dashboard-booking-actions">
+                        <form method="post"
+                              class="finish-booking-form"
+                              action="{{ url_for('main.finish_booking', booking_id=booking.id) }}">
+                            <button class="button booking-finished-button"
+                                    type="submit">
+                                They've left
+                            </button>
+                        </form>
+
+                        <a class="small-link dashboard-booking-edit"
+                           href="{{ url_for('main.edit_booking', booking_id=booking.id) }}">
+                            Edit
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="muted">No bookings for this day.</p>
+    {% endif %}
+</div>
+
+<div class="card dashboard-floor-card">
+    <div class="dashboard-floor-heading">
+        <div>
+            <h2>Table map</h2>
+            <p class="muted">
+                Each table shows how many bookings it has on this day.
+                Hover over a table to see the booking times and customer names.
+            </p>
+        </div>
+</div>
+
+    <div class="dashboard-map-legend">
+        <span class="dashboard-map-key">
+            <span class="dashboard-map-dot no-bookings-dot"></span>
+            No bookings
+        </span>
+        <span class="dashboard-map-key">
+            <span class="dashboard-map-dot has-bookings-dot"></span>
+            Has bookings
+        </span>
+        <span class="dashboard-map-key">
+            <span class="dashboard-map-dot large-party-dot"></span>
+            Large party reserved
+        </span>
+    </div>
+
+    <div class="dashboard-floor-shell"
+         id="dashboard-floor-shell">
+        <div class="dashboard-floor-zoom-surface"
+             id="dashboard-floor-zoom-surface">
+
+            <div class="dashboard-floor-stage"
+                 id="dashboard-floor-stage"
+                 style="
+                    width: {{ floor_settings.canvas_width if floor_settings else 1200 }}px;
+                    height: {{ floor_settings.canvas_height if floor_settings else 760 }}px;
+                 ">
+
+                {% for floor_object in floor_objects %}
+                    <div class="dashboard-floor-object
+                                object-{{ floor_object.object_type }}
+                                shape-{{ floor_object.layout_shape or 'rectangle' }}
+                                {% if floor_object.object_type == "area" and floor_object.area_id and floor_object.area_id in dashboard_large_party_area_ids %}dashboard-large-party-area{% endif %}"
+                         style="
+                            left: {{ floor_object.x_position }}px;
+                            top: {{ floor_object.y_position }}px;
+                            width: {{ floor_object.layout_width }}px;
+                            height: {{ floor_object.layout_height }}px;
+                            transform: rotate({{ floor_object.layout_rotation or 0 }}deg);
+                            z-index: {{ floor_object.z_index or 1 }};
+                         ">
+                        <div class="floor-object-content">
+                            {% if floor_object.object_type == "tv" %}
+                                <span class="floor-icon">TV</span>
+                            {% elif floor_object.object_type == "pillar" %}
+                                <span class="floor-icon">●</span>
+                            {% endif %}
+
+                            <span class="floor-object-label">
+                                {{ floor_object.label }}
+                            </span>
+                        </div>
+                    </div>
+                {% endfor %}
+
+                {% for table in dashboard_tables %}
+                    {% set table_bookings = dashboard_table_bookings.get(table.id|string, []) %}
+                    {% set table_large_parties = dashboard_large_party_tables.get(table.id|string, []) %}
+                    <button type="button"
+                            class="dashboard-map-table
+                                   shape-{{ table.layout_shape or 'rectangle' }}
+                                   {% if table_large_parties %}dashboard-table-large-party{% elif table_bookings %}dashboard-table-has-bookings{% else %}dashboard-table-empty{% endif %}"
+                            data-table-id="{{ table.id }}"
+                            data-table-number="{{ table.number }}"
+                            aria-label="Table {{ table.number }}, {{ table_bookings|length }} bookings"
+                            style="
+                                left: {{ table.x_position or 40 }}px;
+                                top: {{ table.y_position or 40 }}px;
+                                width: {{ table.layout_width or 90 }}px;
+                                height: {{ table.layout_height or 60 }}px;
+                                transform: rotate({{ table.layout_rotation or 0 }}deg);
+                            ">
+                        <span class="dashboard-map-table-number">
+                            T{{ table.number }}
+                        </span>
+
+                        <span class="dashboard-map-booking-count"
+                              title="{{ table_bookings|length }} normal booking{% if table_bookings|length != 1 %}s{% endif %}">
+                            {{ table_bookings|length }}
+                        </span>
+
+                        {% if table_large_parties %}
+                            <span class="dashboard-map-large-party-badge"
+                                  title="Large party reservation">
+                                LP
+                            </span>
+                        {% endif %}
+                    </button>
+                {% endfor %}
+
+                <div class="dashboard-map-tooltip"
+                     id="dashboard-map-tooltip"
+                     hidden>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+window.DASHBOARD_TABLE_BOOKINGS = {{ dashboard_table_bookings | tojson }};
+window.DASHBOARD_LARGE_PARTY_TABLES = {{ dashboard_large_party_tables | tojson }};
+</script>
+
+{% endblock %}

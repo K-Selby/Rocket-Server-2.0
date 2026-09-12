@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+
+{% block title %}Archive | Rocket Pub Server{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <h1>Archive</h1>
+        <p>
+            Open a section to view cancelled records and previous bookings.
+            Large parties move here two days after their event date.
+        </p>
+    </div>
+</div>
+
+<div class="archive-disclosures">
+    <details class="card archive-section archive-disclosure">
+        <summary>
+            <span>
+                <strong>Cancelled bookings</strong>
+                <small>Bookings removed from the active screen</small>
+            </span>
+            <span class="badge danger-badge">{{ cancelled_bookings|length }}</span>
+        </summary>
+
+        <div class="archive-disclosure-content">
+            {% if cancelled_bookings %}
+                <div class="archive-list">
+                    {% for booking in cancelled_bookings %}
+                        <div class="archive-row">
+                            <div class="archive-date-block">
+                                <strong>{{ booking.booking_date.strftime("%d/%m/%Y") }}</strong>
+                                <span>{{ booking.booking_time.strftime("%H:%M") }}</span>
+                            </div>
+
+                            <div>
+                                <strong>{{ booking.customer.name }}</strong>
+                                <div class="muted">
+                                    {{ booking.party_size }} people
+                                    · {% if booking.is_eating_food %}Eating{% else %}Drinks only{% endif %}
+                                    {% if booking.tables %}
+                                        ·
+                                        {% for table in booking.tables %}
+                                            T{{ table.number }}{% if not loop.last %} + {% endif %}
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <span class="badge danger-badge">Cancelled</span>
+
+                            {% if current_user.is_manager %}
+                                <form method="post"
+                                      action="{{ url_for('main.delete_cancelled_booking', booking_id=booking.id) }}"
+                                      onsubmit="return confirm('Permanently delete this cancelled booking? This cannot be undone.');">
+                                    <button class="button archive-delete-button" type="submit">
+                                        Delete permanently
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="muted">No cancelled bookings.</p>
+            {% endif %}
+        </div>
+    </details>
+
+    <details class="card archive-section archive-disclosure">
+        <summary>
+            <span>
+                <strong>Cancelled large parties</strong>
+                <small>Large-party enquiries that were cancelled</small>
+            </span>
+            <span class="badge danger-badge">{{ cancelled_large_parties|length }}</span>
+        </summary>
+
+        <div class="archive-disclosure-content">
+            {% if cancelled_large_parties %}
+                <div class="archive-list">
+                    {% for inquiry in cancelled_large_parties %}
+                        <div class="archive-row">
+                            <div class="archive-date-block">
+                                <strong>
+                                    {% if inquiry.event_date %}
+                                        {{ inquiry.event_date.strftime("%d/%m/%Y") }}
+                                    {% else %}
+                                        Date TBC
+                                    {% endif %}
+                                </strong>
+                                <span>
+                                    {% if inquiry.event_time %}
+                                        {{ inquiry.event_time.strftime("%H:%M") }}
+                                    {% else %}
+                                        Time TBC
+                                    {% endif %}
+                                </span>
+                            </div>
+
+                            <div>
+                                <strong>{{ inquiry.customer_name }}</strong>
+                                <div class="muted">
+                                    {{ inquiry.party_size }} people
+                                    {% if inquiry.occasion %} · {{ inquiry.occasion }}{% endif %}
+                                    · Total £{{ "%.2f"|format(inquiry.total_amount) }}
+                                </div>
+                            </div>
+
+                            <span class="badge danger-badge">Cancelled</span>
+
+                            {% if current_user.is_manager %}
+                                <form method="post"
+                                      action="{{ url_for('main.delete_cancelled_large_party', inquiry_id=inquiry.id) }}"
+                                      onsubmit="return confirm('Permanently delete this cancelled large-party enquiry? This cannot be undone.');">
+                                    <button class="button archive-delete-button" type="submit">
+                                        Delete permanently
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="muted">No cancelled large-party enquiries.</p>
+            {% endif %}
+        </div>
+    </details>
+
+    <details class="card archive-section archive-disclosure">
+        <summary>
+            <span>
+                <strong>Past bookings</strong>
+                <small>Previous bookings kept for reference</small>
+            </span>
+            <span class="badge">{{ past_bookings|length }}</span>
+        </summary>
+
+        <div class="archive-disclosure-content">
+            {% if past_bookings %}
+                <div class="archive-list archive-history-list">
+                    {% for booking in past_bookings %}
+                        <div class="archive-row archive-history-row">
+                            <div class="archive-date-block">
+                                <strong>{{ booking.booking_date.strftime("%d/%m/%Y") }}</strong>
+                                <span>{{ booking.booking_time.strftime("%H:%M") }}</span>
+                            </div>
+
+                            <div>
+                                <strong>{{ booking.customer.name }}</strong>
+                                <div class="muted">
+                                    {{ booking.party_size }} people · {{ booking.status }}
+                                </div>
+                            </div>
+
+                            <div>
+                                {% for table in booking.tables %}
+                                    <span class="badge">T{{ table.number }}</span>
+                                {% endfor %}
+                            </div>
+
+                            <a class="small-link"
+                               href="{{ url_for('main.edit_booking', booking_id=booking.id) }}">
+                                View
+                            </a>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="muted">No past bookings yet.</p>
+            {% endif %}
+        </div>
+    </details>
+
+    <details class="card archive-section archive-disclosure">
+        <summary>
+            <span>
+                <strong>Past large parties</strong>
+                <small>Events from at least two days ago</small>
+            </span>
+            <span class="badge">{{ past_large_parties|length }}</span>
+        </summary>
+
+        <div class="archive-disclosure-content">
+            {% if past_large_parties %}
+                <div class="archive-list archive-history-list">
+                    {% for inquiry in past_large_parties %}
+                        <div class="archive-row archive-history-row">
+                            <div class="archive-date-block">
+                                <strong>{{ inquiry.event_date.strftime("%d/%m/%Y") }}</strong>
+                                <span>
+                                    {% if inquiry.event_time %}
+                                        {{ inquiry.event_time.strftime("%H:%M") }}
+                                    {% endif %}
+                                </span>
+                            </div>
+
+                            <div>
+                                <strong>{{ inquiry.customer_name }}</strong>
+                                <div class="muted">
+                                    {{ inquiry.party_size }} people
+                                    · {{ inquiry.status }}
+                                    · Total £{{ "%.2f"|format(inquiry.total_amount) }}
+                                </div>
+                            </div>
+
+                            <div>
+                                {% for link in inquiry.reserved_areas %}
+                                    <span class="badge">{{ link.area.name }}</span>
+                                {% endfor %}
+                            </div>
+
+                            <a class="small-link"
+                               href="{{ url_for('main.edit_large_party', inquiry_id=inquiry.id) }}">
+                                View
+                            </a>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="muted">No past large parties yet.</p>
+            {% endif %}
+        </div>
+    </details>
+</div>
+{% endblock %}

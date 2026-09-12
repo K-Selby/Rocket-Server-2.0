@@ -1,0 +1,387 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if booking %}Edit Booking{% else %}New Booking{% endif %}
+    | Rocket Pub Server
+{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <h1>{% if booking %}Edit booking{% else %}New booking{% endif %}</h1>
+        <p>New customers are saved automatically from this form.</p>
+    </div>
+
+    {% if not booking %}
+        <a class="button secondary"
+           href="{{ url_for('main.new_large_party') }}">
+            Large party enquiry
+        </a>
+    {% endif %}
+</div>
+
+<form class="card form-grid"
+      method="post"
+      id="booking-form"
+      data-today="{{ today.isoformat() }}"
+      data-now="{{ now_time }}"
+      data-editing="{{ '1' if booking else '0' }}"
+      data-booking-id="{{ booking.id if booking else '' }}">
+
+    <section class="form-section full-width">
+        <h2>Customer</h2>
+        <div class="nested-grid">
+            <label>
+                Name *
+                <input name="customer_name"
+                       id="customer-name"
+                       list="customer-names"
+                       value="{{ booking.customer.name if booking else '' }}"
+                       autocomplete="off"
+                       required>
+                <datalist id="customer-names">
+                    {% for customer in customer_lookup %}
+                        <option value="{{ customer.name }}"></option>
+                    {% endfor %}
+                </datalist>
+            </label>
+
+            <label>
+                Phone number *
+                <input name="customer_phone"
+                       id="customer-phone"
+                       inputmode="tel"
+                       value="{{ booking.customer.phone if booking else '' }}"
+                       required>
+            </label>
+        </div>
+
+        <div id="returning-customer-message"
+             class="existing-customer-message"
+             hidden>
+            Returning customer found — saved seating preferences have been filled in.
+        </div>
+    </section>
+
+    <section class="form-section full-width">
+        <h2>Booking</h2>
+
+        <div class="nested-grid">
+            <label>
+                Date *
+                <input class="booking-date-input"
+                       id="booking-date"
+                       type="date"
+                       name="booking_date"
+                       min="{{ today.isoformat() }}"
+                       value="{% if booking %}{{ booking.booking_date.isoformat() }}{% else %}{{ today.isoformat() }}{% endif %}"
+                       required>
+            </label>
+
+            <label>
+                Time *
+                <input class="booking-time-input"
+                       id="booking-time"
+                       type="time"
+                       name="booking_time"
+                       step="60"
+                       value="{% if booking %}{{ booking.booking_time.strftime('%H:%M') }}{% endif %}"
+                       required>
+                <span class="field-note">
+                    12:15pm–7:30pm, or 12:15pm–7:00pm on Sundays.
+                </span>
+            </label>
+
+            <label>
+                Number of people *
+                <input type="number"
+                       name="party_size"
+                       id="party-size"
+                       min="1"
+                       value="{{ booking.party_size if booking else '' }}"
+                       required>
+            </label>
+
+            <label>
+                Number of children
+                <input type="number"
+                       name="number_of_children"
+                       min="0"
+                       value="{{ booking.number_of_children if booking else 0 }}">
+                <span class="field-note">Children are under 13 years old.</span>
+            </label>
+
+            <label>
+                High chairs required
+                <input type="number"
+                       name="high_chairs_required"
+                       min="0"
+                       value="{{ booking.high_chairs_required if booking else 0 }}">
+            </label>
+
+            <label>
+                Occasion
+                <input name="occasion"
+                       value="{{ booking.occasion if booking and booking.occasion else '' }}"
+                       placeholder="Birthday, anniversary...">
+            </label>
+
+            <label class="checkbox-row prominent-checkbox">
+                <input type="checkbox"
+                       name="is_eating_food"
+                       id="is-eating-food"
+                       {% if not booking or booking.is_eating_food %}checked{% endif %}>
+                Eating food
+                <span class="field-note">
+                    Untick for drinks-only visits. Food bookings avoid unsuitable
+                    tables unless they are the last suitable option.
+                </span>
+            </label>
+        </div>
+
+        <div class="info-strip">Standard table time: <strong>3 hours</strong></div>
+        <div id="deposit-warning" class="deposit-warning" hidden></div>
+        <div id="deposit-payment-field"
+             class="deposit-payment-field"
+             {% if not booking or booking.party_size <= 10 %}hidden{% endif %}>
+            <label>
+                Deposit paid (£)
+                <input type="number"
+                       name="deposit_paid_amount"
+                       id="deposit-paid-amount"
+                       min="0"
+                       step="0.01"
+                       value="{{ '%.2f'|format(booking.deposit_paid_amount or 0) if booking else '0.00' }}">
+            </label>
+        </div>
+        <div id="late-food-warning" class="late-food-warning" hidden></div>
+    </section>
+
+    <section class="form-section full-width">
+        <h2>Seating preferences</h2>
+
+        <div class="nested-grid">
+            <label>
+                Preferred area
+                <select name="preferred_area_id" id="preferred-area">
+                    <option value="">No preference</option>
+                    {% for area in areas %}
+                        <option value="{{ area.id }}"
+                            {% if booking and booking.preferred_area_id == area.id %}selected{% endif %}>
+                            {{ area.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </label>
+
+            <label>
+                Preferred table
+                <select name="preferred_table_id" id="preferred-table">
+                    <option value="">No preference</option>
+                    {% for table in tables %}
+                        <option value="{{ table.id }}"
+                            {% if booking and booking.preferred_table_id == table.id %}selected{% endif %}>
+                            Table {{ table.number }} — {{ table.capacity }} seats
+                        </option>
+                    {% endfor %}
+                </select>
+            </label>
+
+            <label class="checkbox-row">
+                <input type="checkbox"
+                       name="wants_near_tv"
+                       id="wants-near-tv"
+                       {% if booking and booking.wants_near_tv %}checked{% endif %}>
+                Prefer to sit near a TV
+            </label>
+
+            <label class="checkbox-row">
+                <input type="checkbox"
+                       name="avoids_bench"
+                       id="avoids-bench"
+                       {% if booking and booking.avoids_bench %}checked{% endif %}>
+                Does not want bench seating
+            </label>
+        </div>
+    </section>
+
+
+<fieldset class="full-width booking-table-picker">
+    <legend>Table selection</legend>
+
+    <p class="muted">
+        For parties under 10, tables are sorted by suitability and the system
+        can choose a suitable table automatically. For parties of 10 or more,
+        choose the Pool Room / Snug tables manually until the selected seats
+        reach the party size.
+    </p>
+
+    <div class="booking-table-legend">
+        <span class="legend-chip legend-green">Ideal</span>
+        <span class="legend-chip legend-yellow">Available / oversized</span>
+        <span class="legend-chip legend-grey">Combination candidate</span>
+        <span class="legend-chip legend-red">Unavailable</span>
+        <span class="legend-chip legend-purple">Large party reserved</span>
+    </div>
+
+    <div class="table-slider-shell">
+        <button type="button" class="table-slider-arrow" id="table-slider-left" aria-label="Scroll tables left">‹</button>
+
+        <div class="table-slider" id="table-slider">
+            {% for table in tables %}
+                <label class="table-choice-card"
+                       data-table-id="{{ table.id }}"
+                       data-number="{{ table.number }}"
+                       data-capacity="{{ table.capacity }}"
+                       data-area-id="{{ table.area_id }}"
+                       data-area-name="{{ table.area.name }}">
+                    <input type="checkbox"
+                           name="table_ids"
+                           value="{{ table.id }}"
+                           {% if table.id in selected_table_ids %}checked{% endif %}>
+
+                    <div class="table-choice-heading">
+                        <strong>T{{ table.number }}</strong>
+                        <span>{{ table.capacity }} seats</span>
+                    </div>
+
+                    <div class="table-choice-meta">
+                        <span>{{ table.area.name }}</span>
+                        {% if table.near_tv %}<span>Near TV</span>{% endif %}
+                        {% if table.has_bench %}<span>Bench</span>{% endif %}
+                        {% if table.unsuitable_for_food %}<span>Food last resort</span>{% endif %}
+                    </div>
+
+                    <div class="table-choice-status">Enter booking details</div>
+                </label>
+            {% endfor %}
+        </div>
+
+        <button type="button" class="table-slider-arrow" id="table-slider-right" aria-label="Scroll tables right">›</button>
+    </div>
+
+    <div id="large-booking-guidance"
+         class="large-booking-guidance"
+         hidden>
+        <h3>10+ booking — Pool Room / Snug</h3>
+        <p>
+            Pool Room and Snug/Cubby are prioritised for larger bookings.
+            You can click a suggested collection below or manually choose any
+            available tables until the selected seats reach the party size.
+            Larger bookings take priority over smaller normal bookings where
+            the smaller booking can be moved safely.
+        </p>
+        <div id="large-booking-group-list"></div>
+        <div id="large-booking-seat-count"></div>
+        <div id="large-booking-selected-tables"
+             class="large-booking-selected-tables">
+        </div>
+    </div>
+
+    <div id="pairing-suggestions" class="pairing-suggestions">
+        <h3>Suggested table combinations</h3>
+        <p class="field-note">
+            Suitable configured table combinations appear here when a
+            single table is not the best fit.
+        </p>
+        <div id="pairing-suggestion-list"></div>
+        <div id="table-capacity-warning"
+             class="table-capacity-warning"
+             hidden>
+        </div>
+    </div>
+
+    <div class="booking-floor-plan-wrap">
+        <div class="booking-floor-plan-toolbar">
+            <div>
+                <strong>Pub layout</strong>
+                <span class="field-note">Hover a card above to highlight the table here.</span>
+            </div>
+</div>
+
+        <div class="booking-floor-plan-shell" id="booking-floor-plan-shell">
+            <div class="booking-floor-plan-zoom-surface" id="booking-floor-plan-zoom-surface">
+                <div class="booking-floor-plan-stage"
+                     id="booking-floor-plan-stage"
+                     style="
+                        width: {{ floor_settings.canvas_width if floor_settings else 1200 }}px;
+                        height: {{ floor_settings.canvas_height if floor_settings else 760 }}px;
+                     ">
+
+                    {% for floor_object in floor_objects %}
+                        <div class="booking-floor-object object-{{ floor_object.object_type }} shape-{{ floor_object.layout_shape or 'rectangle' }}"
+                             style="
+                                left: {{ floor_object.x_position }}px;
+                                top: {{ floor_object.y_position }}px;
+                                width: {{ floor_object.layout_width }}px;
+                                height: {{ floor_object.layout_height }}px;
+                                transform: rotate({{ floor_object.layout_rotation or 0 }}deg);
+                                z-index: {{ floor_object.z_index or 1 }};
+                             ">
+                            <div class="floor-object-content">
+                                {% if floor_object.object_type == "tv" %}
+                                    <span class="floor-icon">TV</span>
+                                {% elif floor_object.object_type == "pillar" %}
+                                    <span class="floor-icon">●</span>
+                                {% endif %}
+                                <span class="floor-object-label">{{ floor_object.label }}</span>
+                            </div>
+                        </div>
+                    {% endfor %}
+
+                    {% for table in tables %}
+                        <button type="button"
+                                class="booking-map-table shape-{{ table.layout_shape or 'rectangle' }}"
+                                data-table-id="{{ table.id }}"
+                                data-number="{{ table.number }}"
+                                aria-label="Table {{ table.number }}"
+                                style="
+                                    left: {{ table.x_position or 40 }}px;
+                                    top: {{ table.y_position or 40 }}px;
+                                    width: {{ table.layout_width or 90 }}px;
+                                    height: {{ table.layout_height or 60 }}px;
+                                    transform: rotate({{ table.layout_rotation or 0 }}deg);
+                                ">
+                            <span>T{{ table.number }}</span>
+                            <small>{{ table.capacity }}</small>
+                        </button>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</fieldset>
+
+    <section class="form-section full-width">
+        <h2>Repeat booking</h2>
+        <label class="checkbox-row prominent-checkbox">
+            <input type="checkbox"
+                   name="repeat_weekly"
+                   {% if booking and booking.repeat_booking and booking.repeat_booking.active %}checked{% endif %}>
+            Repeat this booking every week
+        </label>
+        <p class="field-note">
+            The system will not automatically book the table. One week before
+            each occurrence, the dashboard will show Confirm, Skip this time,
+            and Edit options.
+        </p>
+    </section>
+
+    <label class="full-width">
+        Booking notes
+        <textarea name="notes"
+                  rows="4">{{ booking.notes if booking and booking.notes else '' }}</textarea>
+    </label>
+
+    <div class="full-width">
+        <button class="button"
+                type="submit">
+            {% if booking %}Save booking changes{% else %}Create booking{% endif %}
+        </button>
+    </div>
+</form>
+
+<script>
+    window.PUB_CUSTOMERS = {{ customer_lookup | tojson }};
+</script>
+{% endblock %}

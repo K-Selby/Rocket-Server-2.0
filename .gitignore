@@ -1,0 +1,45 @@
+# Operating-system files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Python
+**/__pycache__/
+**/*.py[cod]
+**/.venv/
+**/venv/
+.pytest_cache/
+.mypy_cache/
+
+# Flask runtime data and secrets
+**/.env
+!**/.env.example
+Rocket-Booking-Portal/instance/
+
+# Node / Next.js
+**/node_modules/
+**/.next/
+**/out/
+**/coverage/
+**/*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Java / Maven
+**/target/
+**/.classpath
+**/.project
+**/.settings/
+
+# Shared live data: transfer these separately to the Windows machine
+data/*.db
+data/*.db-shm
+data/*.db-wal
+data/microsoft_email_token*.json
+
+# Local editor files
+.idea/
+.vscode/
+*.swp
+*~

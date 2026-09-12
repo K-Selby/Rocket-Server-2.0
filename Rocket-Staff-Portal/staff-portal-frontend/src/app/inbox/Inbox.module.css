@@ -1,0 +1,433 @@
+.review {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+}
+
+.toolbar,
+.queue,
+.queueButtons,
+.monthControls,
+.dayHeading,
+.requestHeading,
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.toolbar {
+  width: 100%;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.queue {
+  width: 100%;
+  min-width: 0;
+  padding: 1rem 0;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.queue small {
+  display: block;
+  margin-top: 0.25rem;
+  color: #66736a;
+  font-size: 0.85rem;
+}
+
+.queueButtons {
+  flex-wrap: wrap;
+  font-size: 0.88rem;
+}
+
+.queueButtons button,
+.monthControls button {
+  min-height: 2.5rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid #d0ddd3;
+  border-radius: 0.5rem;
+  background: white;
+  color: #235638;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.queueButtons button:hover,
+.monthControls button:hover {
+  background: #f1f6f2;
+}
+
+/* Main Inbox workspace */
+.layout {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(20rem, 0.85fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.calendar,
+.panel {
+  width: 100%;
+  min-width: 0;
+  padding: 1.15rem;
+  background: rgba(255, 255, 255, 0.97);
+  border: 1px solid #d7e1d9;
+  border-radius: 0.8rem;
+}
+
+.calendar {
+  overflow: hidden;
+}
+
+.monthControls {
+  width: 100%;
+  min-width: 0;
+  margin-bottom: 0.9rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+/* Calendar */
+.grid {
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 3px;
+}
+
+.weekday {
+  padding: 0.45rem 0;
+  color: #657269;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.date {
+  width: 100%;
+  min-width: 0;
+  min-height: 4rem;
+  padding: 0.4rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+
+  border: 1px solid transparent;
+  border-radius: 0.4rem;
+  background: #f5f8f5;
+  color: #334b3b;
+
+  font-size: 0.82rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.date:hover {
+  background: #eef4ef;
+}
+
+.date.selected {
+  padding: calc(0.4rem - 1px);
+  border: 2px solid #176b3a;
+  background: #e9f4ec;
+}
+
+.date.eventDate {
+  padding: calc(0.4rem - 1px);
+  border: 2px solid #8458a0;
+  background: #f3eafa;
+}
+
+.date.eventDate.selected {
+  border-color: #8458a0;
+  outline: 2px solid #176b3a;
+  outline-offset: 1px;
+}
+
+.date.range {
+  box-shadow: inset 0 -3px #79b58b;
+}
+
+.outside {
+  opacity: 0.4;
+}
+
+.today {
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.markers {
+  min-height: 1.1rem;
+  margin-top: 0.25rem;
+  align-self: center;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2px;
+}
+
+.markers > span {
+  min-width: 0.9rem;
+  padding: 0.1rem 0.2rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  text-align: center;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.8rem;
+  margin: 0.9rem 0;
+
+  color: #617067;
+  font-size: 0.78rem;
+}
+
+.hint {
+  margin: 0.4rem 0;
+  color: #69776d;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.calendar a {
+  color: #176b3a;
+  font-size: 0.85rem;
+}
+
+/* Right-hand day/request panel */
+.dayHeading {
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid #e3e9e4;
+}
+
+.dayHeading h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.dayHeading > span {
+  color: #68776d;
+  font-size: 0.88rem;
+}
+
+.request {
+  padding: 1rem 0;
+}
+
+.requestHeading {
+  align-items: flex-start;
+}
+
+.requestHeading h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.requestDates,
+.chips {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.requestDates {
+  margin-top: 0.65rem;
+}
+
+.requestDates button {
+  padding: 0.45rem 0.6rem;
+  border: 1px solid #d5e2d8;
+  border-radius: 0.4rem;
+  background: #f1f6f2;
+  color: #28583a;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.requestDates button[aria-pressed="true"] {
+  background: #d9eddf;
+  border-color: #176b3a;
+}
+
+.decision {
+  color: #52685a;
+  font-size: 0.88rem;
+}
+
+.section {
+  margin-top: 0.8rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid #e6ece7;
+}
+
+.section h3 {
+  margin: 0 0 0.65rem;
+  font-size: 0.95rem;
+}
+
+.section h4 {
+  margin: 0.85rem 0 0.5rem;
+  color: #52685a;
+  font-size: 0.85rem;
+}
+
+.section p {
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.chips > span {
+  padding: 0.4rem 0.55rem;
+  border-radius: 0.4rem;
+  font-size: 0.85rem;
+}
+
+.event {
+  background: #eee4f5;
+  color: #654278;
+}
+
+.off {
+  background: #d9efdf;
+  color: #285a37;
+}
+
+.pending {
+  background: #fff0be;
+  color: #765b19;
+}
+
+.available {
+  background: #e0edf7;
+  color: #3b5c76;
+}
+
+.warning {
+  padding: 0.6rem;
+  border-radius: 0.4rem;
+  background: #fce7df;
+  color: #93432b;
+  font-size: 0.88rem;
+}
+
+.actions {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  flex-wrap: wrap;
+  border-top: 1px solid #e6ece7;
+}
+
+.actions > span {
+  color: #69776d;
+  font-size: 0.82rem;
+}
+
+.actions > div {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.requestPicker {
+  display: grid;
+  gap: 0.4rem;
+  margin-top: 0.8rem;
+  color: #66796c;
+  font-size: 0.85rem;
+}
+
+.requestPicker select {
+  width: 100%;
+  min-height: 2.5rem;
+  padding: 0.55rem;
+
+  background: white;
+  border: 1px solid #d5e2d8;
+  border-radius: 0.4rem;
+
+  color: #334b3b;
+  font-size: 0.88rem;
+}
+
+.review button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.review button:focus-visible {
+  outline: 2px solid #176b3a;
+  outline-offset: 2px;
+}
+
+/* Tablet */
+@media (max-width: 950px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .calendar,
+  .panel {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+  }
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .toolbar,
+  .queue {
+    align-items: flex-start;
+  }
+
+  .queueButtons {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .layout {
+    gap: 0.9rem;
+  }
+
+  .calendar,
+  .panel {
+    padding: 0.85rem;
+  }
+
+  .grid {
+    gap: 2px;
+  }
+
+  .date {
+    min-height: 3.5rem;
+    padding: 0.3rem;
+    font-size: 0.78rem;
+  }
+
+  .date.selected,
+  .date.eventDate {
+    padding: calc(0.3rem - 1px);
+  }
+
+  .markers > span {
+    font-size: 0.65rem;
+  }
+
+  .actions {
+    align-items: flex-start;
+  }
+}

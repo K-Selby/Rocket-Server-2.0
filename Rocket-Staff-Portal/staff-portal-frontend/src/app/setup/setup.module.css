@@ -1,0 +1,171 @@
+.card {
+  width: min(100%, 440px);
+}
+
+.progress {
+  margin: -8px 0 24px;
+}
+
+.progressLabels {
+  margin-bottom: 8px;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  color: #687169;
+
+  font-size: 0.8rem;
+}
+
+.progressLabels strong {
+  color: #174f3d;
+}
+
+.progressTrack {
+  height: 6px;
+
+  overflow: hidden;
+
+  border-radius: 999px;
+
+  background: #e1e7e3;
+}
+
+.progressTrack span {
+  height: 100%;
+
+  display: block;
+
+  border-radius: inherit;
+
+  background: #176b3a;
+
+  transition: width 180ms ease;
+}
+
+.progressHalf {
+  width: 50%;
+}
+
+.progressFull {
+  width: 100%;
+}
+
+.notice {
+  margin: 0 0 17px;
+  padding: 10px 12px;
+
+  border-radius: 8px;
+
+  background: #e8f4eb;
+  color: #176b3a;
+
+  font-size: 0.88rem;
+}
+
+.formHint,
+.emailHelp {
+  margin: -5px 0 0;
+
+  color: #687169;
+
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.emailHelp {
+  margin: 0;
+
+  text-align: center;
+}
+
+.codeInput {
+  text-align: center;
+  letter-spacing: 0.35rem;
+  font-size: 1.15rem !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.secondaryAction {
+  border: 1px solid #bdc8c0 !important;
+
+  background: white !important;
+  color: #405047 !important;
+}
+
+.secondaryAction:hover:not(:disabled) {
+  background: #f3f6f4 !important;
+}
+
+.textActions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+
+  gap: 8px 18px;
+}
+
+.textActions button {
+  min-height: 0 !important;
+
+  padding: 0 !important;
+
+  background: transparent !important;
+  color: #176b3a !important;
+
+  font-size: 0.83rem !important;
+}
+
+.textActions button:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.setupActions {
+  display: grid;
+  justify-items: center;
+
+  gap: 15px;
+
+  text-align: center;
+}
+
+.setupActions p {
+  margin: 0;
+
+  color: #526057;
+
+  font-size: 0.9rem;
+}
+
+.setupActions button {
+  width: 100%;
+  min-height: 44px;
+
+  border: 0;
+  border-radius: 8px;
+
+  background: #174f3d;
+  color: white;
+
+  font: inherit;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+.successMark {
+  width: 48px;
+  height: 48px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 50%;
+
+  background: #e3f1e7;
+  color: #176b3a;
+
+  font-size: 1.5rem;
+  font-weight: 800;
+}

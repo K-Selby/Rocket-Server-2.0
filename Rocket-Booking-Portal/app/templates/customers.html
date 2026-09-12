@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Customers | Rocket Pub Server{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <h1>Customers</h1>
+        <p>Search, edit or remove saved customer records.</p>
+    </div>
+</div>
+
+<form class="search-bar" method="get">
+    <input type="search"
+           name="q"
+           value="{{ search }}"
+           placeholder="Search name or phone number">
+    <button class="button secondary" type="submit">Search</button>
+</form>
+
+<div class="card">
+    {% if customers %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Phone</th>
+                    <th>Preference</th>
+                    <th>Bookings</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for customer in customers %}
+                    <tr>
+                        <td>{{ customer.name }}</td>
+                        <td>{{ customer.phone }}</td>
+                        <td>
+                            {% if customer.preferred_area %}{{ customer.preferred_area.name }}{% endif %}
+                            {% if customer.preferred_table %} · T{{ customer.preferred_table.number }}{% endif %}
+                            {% if customer.prefers_near_tv %} · Near TV{% endif %}
+                            {% if customer.avoids_bench %} · No bench{% endif %}
+                        </td>
+                        <td>{{ customer.bookings|length }}</td>
+                        <td class="row-actions">
+                            <a class="small-link"
+                               href="{{ url_for('main.edit_customer', customer_id=customer.id) }}">
+                                Edit
+                            </a>
+                            <form method="post"
+                                  action="{{ url_for('main.delete_customer', customer_id=customer.id) }}"
+                                  onsubmit="return confirm('Delete this customer? This also deletes their linked normal booking history and repeat schedules.');">
+                                <button class="link-button danger" type="submit">
+                                    Delete
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="muted">No matching customers.</p>
+    {% endif %}
+</div>
+{% endblock %}

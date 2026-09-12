@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Edit Staff Name | Rocket Pub Server{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <h1>Edit staff name</h1>
+    </div>
+</div>
+
+<form method="post" class="card rota-name-edit-form">
+    {% if rota_id %}
+        <input type="hidden" name="rota_id" value="{{ rota_id }}">
+    {% endif %}
+
+    <label>
+        Name
+        <input type="text"
+               name="display_name"
+               value="{{ profile.rota_name }}"
+               required>
+    </label>
+
+    <div class="form-actions">
+        <button class="button" type="submit">Save</button>
+        {% if rota_id %}
+            <a class="button secondary"
+               href="{{ url_for('main.rota_edit', rota_id=rota_id) }}">
+                Cancel
+            </a>
+        {% else %}
+            <a class="button secondary"
+               href="{{ url_for('main.rota_profiles') }}">
+                Cancel
+            </a>
+        {% endif %}
+    </div>
+</form>
+{% endblock %}

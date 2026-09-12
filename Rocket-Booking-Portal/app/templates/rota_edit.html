@@ -1,0 +1,630 @@
+{% extends "base.html" %}
+{% block title %}Edit Rota | Rocket Pub Server{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <h1>Rota Builder</h1>
+        <p>
+            Week from Sunday {{ week.week_start.strftime("%d %B %Y") }}
+            {% if week.status == "published" %} · Issued{% endif %}
+        </p>
+    </div>
+
+    <div class="heading-actions">
+        {% if week.status == "draft" %}
+            <form method="post"
+                  action="{{ url_for('main.rota_clear_draft', rota_id=week.id) }}"
+                  onsubmit="return confirm('Clear the ENTIRE rota draft? Every shift entered for this week will be removed. Staff diary and availability entries will stay.');">
+                <button class="button secondary" type="submit">
+                    Clear rota
+                </button>
+            </form>
+        {% endif %}
+
+        <button class="button secondary"
+                type="submit"
+                form="rota-save-form">
+            {{ "Save draft" if week.status == "draft" else "Save changes" }}
+        </button>
+
+        {% if week.status == "draft" %}
+            <button class="button"
+                    type="button"
+                    id="issue-rota-button">
+                Issue rota
+            </button>
+        {% endif %}
+
+        <span class="rota-autosave-status"
+              id="rota-autosave-status"
+              data-state="saved">
+            Saved
+        </span>
+    </div>
+</div>
+
+<form method="post"
+      action="{{ url_for('main.rota_save_draft', rota_id=week.id) }}"
+      id="rota-save-form"
+      hidden>
+    <input type="hidden" name="rota_state" id="rota-state-input">
+    <input type="hidden" name="issue" id="rota-issue-input" value="0">
+</form>
+
+<div class="card rota-table-card">
+    <div class="rota-scroll">
+        <table class="rota-table rota-edit-table">
+            <thead>
+                <tr>
+                    <th>Staff</th>
+                    {% for day in days %}
+                        <th>
+                            {{ day.strftime("%a") }}
+                            <small>{{ day.strftime("%d %b") }}</small>
+                        </th>
+                    {% endfor %}
+                </tr>
+            </thead>
+
+            <tbody>
+            {% for profile in profiles %}
+                <tr>
+                    <th>
+                        <div class="rota-name-cell">
+                            <span>{{ profile.rota_name }}</span>
+
+                            <details class="rota-name-options">
+                                <summary title="Staff options">•••</summary>
+                                <div class="rota-name-options-menu">
+<form method="post"
+                                          action="{{ url_for('main.rota_profile_archive', profile_id=profile.id) }}"
+                                          onsubmit="return confirm('Archive {{ profile.rota_name }}?');">
+                                        <input type="hidden"
+                                               name="rota_id"
+                                               value="{{ week.id }}">
+                                        <button class="link-button danger" type="submit">
+                                            Archive
+                                        </button>
+                                    </form>
+                                </div>
+                            </details>
+                        </div>
+                    </th>
+
+                    {% for day in days %}
+                        {% set diary = cell_diary.get((profile.id, day), {}) %}
+                        {% set shifts = shift_map.get((profile.id, day), []) %}
+
+                        <td class="rota-edit-cell
+                                   {% if diary.get('unavailable') %}rota-cell-unavailable{% endif %}"
+                            data-rota-cell
+                            data-staff-id="{{ profile.id }}"
+                            data-shift-date="{{ day.isoformat() }}">
+
+                            {% if diary.get('unavailable') %}
+                                <div class="rota-unavailable-mark"
+                                     title="Unavailable / day off requested">
+                                    /
+                                    <small>
+                                        {% if diary.get('unavailable_status') == 'requested' %}
+                                            requested
+                                        {% else %}
+                                            unavailable
+                                        {% endif %}
+                                    </small>
+                                </div>
+
+                            {% else %}
+                                {% if diary.get('availability') %}
+                                    <div class="rota-availability-badges">
+                                        {% for availability in diary.get('availability') %}
+                                            <div class="rota-availability-request
+                                                {% if availability.status == 'requested' %}pending{% endif %}">
+                                                <span class="rota-availability-text"
+                                                      title="{{ availability.note or 'Specific availability' }}">
+                                                    {{ availability.text }}
+                                                </span>
+
+                                                {% if not shifts %}
+                                                    <form method="post"
+                                                          class="rota-use-availability-form"
+                                                          data-availability-shift="{{ availability.text }}"
+                                                          action="{{ url_for('main.rota_use_availability', rota_id=week.id, entry_id=availability.id) }}">
+                                                        <button type="submit"
+                                                                class="rota-use-availability"
+                                                                title="Add {{ availability.text }} to rota"
+                                                                aria-label="Add requested shift {{ availability.text }}">
+                                                            +
+                                                        </button>
+                                                    </form>
+                                                {% endif %}
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+
+                                {% for shift in shifts %}
+                                    <div class="rota-existing-shift">
+                                        <button type="button"
+                                                class="rota-shift-display"
+                                                data-edit-shift>
+                                            {{ shift_label(shift) }}
+                                        </button>
+
+                                        <div class="rota-cell-editor"
+                                             data-shift-editor
+                                             hidden>
+                                            <form method="post"
+                                                  action="{{ url_for('main.rota_edit_shift', shift_id=shift.id) }}"
+                                                  class="rota-inline-shift-form">
+                                                <input type="hidden"
+                                                       name="shift_date"
+                                                       value="{{ day.isoformat() }}">
+
+                                                <input type="text"
+                                                       name="shift_text"
+                                                       value="{{ shift_label(shift) }}"
+                                                       placeholder="4-8"
+                                                       autocomplete="off"
+                                                       inputmode="text"
+                                                       required>
+
+                                                <button class="rota-editor-confirm"
+                                                        type="submit"
+                                                        title="Save shift">
+                                                    ✓
+                                                </button>
+
+                                                <button class="rota-editor-cancel"
+                                                        type="button"
+                                                        data-cancel-shift
+                                                        title="Cancel">
+                                                    ×
+                                                </button>
+                                            </form>
+
+                                            <form method="post"
+                                                  class="rota-remove-shift-form"
+                                                  action="{{ url_for('main.rota_delete_shift', shift_id=shift.id) }}"
+                                                  onsubmit="return confirm('Remove this shift?');">
+                                                <button class="rota-editor-remove"
+                                                        type="submit">
+                                                    Remove
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+
+                                {% if not shifts %}
+                                    <button type="button"
+                                            class="rota-blank-cell-button"
+                                            data-add-shift
+                                            aria-label="Add shift for {{ profile.rota_name }} on {{ day.strftime('%A') }}">
+                                    </button>
+
+                                    <div class="rota-cell-editor"
+                                         data-add-editor
+                                         hidden>
+                                        <form method="post"
+                                              action="{{ url_for('main.rota_add_shift', rota_id=week.id) }}"
+                                              class="rota-inline-shift-form">
+                                            <input type="hidden"
+                                                   name="staff_id"
+                                                   value="{{ profile.id }}">
+                                            <input type="hidden"
+                                                   name="shift_date"
+                                                   value="{{ day.isoformat() }}">
+
+                                            <input type="text"
+                                                   name="shift_text"
+                                                   placeholder="4-8"
+                                                   autocomplete="off"
+                                                   inputmode="text"
+                                                   required>
+
+                                            <button class="rota-editor-confirm"
+                                                    type="submit"
+                                                    title="Add shift">
+                                                ✓
+                                            </button>
+
+                                            <button class="rota-editor-cancel"
+                                                    type="button"
+                                                    data-cancel-shift
+                                                    title="Cancel">
+                                                ×
+                                            </button>
+                                        </form>
+                                    </div>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+
+            {% if archived_staff %}
+            <tr class="rota-add-staff-row">
+                <th scope="row">
+                    <strong>Archived staff</strong>
+                </th>
+
+                <td colspan="7">
+                    <div class="rota-archived-staff-list">
+                        {% for archived in archived_staff %}
+                            <form method="post"
+                                  action="{{ url_for('main.rota_profile_restore', profile_id=archived.id) }}">
+                                <input type="hidden"
+                                       name="rota_id"
+                                       value="{{ week.id }}">
+
+                                <button type="submit"
+                                        class="rota-add-person">
+                                    {{ archived.rota_name }}
+                                </button>
+                            </form>
+                        {% endfor %}
+                    </div>
+                </td>
+            </tr>
+            {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<section class="card">
+    <h2>Staff Diary this week</h2>
+
+    <div class="rota-diary-strip">
+        {% for day in days %}
+            <div class="rota-diary-day">
+                <strong>{{ day.strftime("%a %d") }}</strong>
+
+                {% for entry in diary_by_day.get(day, []) %}
+                    <div class="diary-mini {{ entry.status }}">
+                        {% if entry.entry_type == "no_one_off" %}
+                            <strong>NO ONE OFF</strong>
+                        {% else %}
+                            {{ entry.staff.display_name }}:
+                            {% if entry.entry_type == "available_window" %}
+                                Available
+                                {% if entry.available_from %}
+                                    {{ entry.available_from.strftime("%H:%M") }}
+                                {% endif %}
+                                –
+                                {% if entry.available_until %}
+                                    {{ entry.available_until.strftime("%H:%M") }}
+                                {% endif %}
+                            {% else %}
+                                {{ entry.entry_type.replace("_", " ")|title }}
+                            {% endif %}
+                        {% endif %}
+
+                        {% if entry.note %}
+                            <small>{{ entry.note }}</small>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <span class="muted">No entries</span>
+                {% endfor %}
+            </div>
+        {% endfor %}
+    </div>
+</section>
+
+<script>
+(function () {
+    const saveForm = document.getElementById("rota-save-form");
+    const stateInput = document.getElementById("rota-state-input");
+    const issueInput = document.getElementById("rota-issue-input");
+    const issueButton = document.getElementById("issue-rota-button");
+    const saveUrl = saveForm.action;
+
+    let autosaveTimer = null;
+    let autosaveInFlight = null;
+    let draftDirty = false;
+
+    function closeEditors(except) {
+        document.querySelectorAll("[data-add-editor], [data-shift-editor]")
+            .forEach(function (editor) {
+                if (editor !== except) editor.hidden = true;
+            });
+
+        document.querySelectorAll("[data-add-shift]")
+            .forEach(function (button) {
+                const cell = button.closest("[data-rota-cell]");
+                const hasShift = cell.querySelector(".rota-shift-display");
+                button.hidden = Boolean(hasShift);
+            });
+
+        document.querySelectorAll("[data-edit-shift]")
+            .forEach(function (button) {
+                button.hidden = false;
+            });
+    }
+
+    function ensureShiftDisplay(cell, text) {
+        let wrapper = cell.querySelector(".rota-existing-shift");
+
+        if (!wrapper) {
+            wrapper = document.createElement("div");
+            wrapper.className = "rota-existing-shift rota-local-shift";
+
+            const display = document.createElement("button");
+            display.type = "button";
+            display.className = "rota-shift-display";
+            display.setAttribute("data-edit-shift", "");
+            wrapper.appendChild(display);
+
+            const addEditor = cell.querySelector("[data-add-editor]");
+            cell.insertBefore(wrapper, addEditor || null);
+            bindEditButton(display);
+        }
+
+        const display = wrapper.querySelector(".rota-shift-display");
+        display.textContent = text;
+        display.hidden = false;
+
+        const editInput = wrapper.querySelector(
+            '[data-shift-editor] input[name="shift_text"]'
+        );
+        if (editInput) editInput.value = text;
+
+        const blank = cell.querySelector("[data-add-shift]");
+        if (blank) blank.hidden = true;
+
+        return wrapper;
+    }
+
+    function bindEditButton(button) {
+        if (button.dataset.boundEdit === "1") return;
+        button.dataset.boundEdit = "1";
+
+        button.addEventListener("click", function (event) {
+            event.stopPropagation();
+
+            const wrapper = button.closest(".rota-existing-shift");
+            let editor = wrapper.querySelector("[data-shift-editor]");
+
+            // Newly-created local shifts reuse the cell's add editor.
+            if (!editor) {
+                editor = button.closest("[data-rota-cell]")
+                    .querySelector("[data-add-editor]");
+            }
+
+            closeEditors(editor);
+            button.hidden = true;
+            editor.hidden = false;
+
+            const input = editor.querySelector('input[name="shift_text"]');
+            if (input) {
+                input.value = button.textContent.trim();
+                input.focus();
+                input.select();
+            }
+        });
+    }
+
+    document.querySelectorAll("[data-edit-shift]").forEach(bindEditButton);
+
+    document.querySelectorAll("[data-add-shift]").forEach(function (button) {
+        button.addEventListener("click", function (event) {
+            event.stopPropagation();
+
+            const cell = button.closest("[data-rota-cell]");
+            const editor = cell.querySelector("[data-add-editor]");
+
+            closeEditors(editor);
+            button.hidden = true;
+            editor.hidden = false;
+
+            const input = editor.querySelector('input[name="shift_text"]');
+            if (input) {
+                input.value = "";
+                input.focus();
+            }
+        });
+    });
+
+    // Confirming a cell edit changes only the browser draft.
+    document.querySelectorAll(".rota-inline-shift-form").forEach(function (form) {
+        form.addEventListener("submit", function (event) {
+            event.preventDefault();
+
+            const cell = form.closest("[data-rota-cell]");
+            const input = form.querySelector('input[name="shift_text"]');
+            const text = (input?.value || "").trim().toUpperCase();
+
+            if (!text) return;
+
+            const existingWrapper = form.closest(".rota-existing-shift");
+
+            if (existingWrapper) {
+                const display = existingWrapper.querySelector(
+                    ".rota-shift-display"
+                );
+                display.textContent = text;
+                display.hidden = false;
+            } else {
+                ensureShiftDisplay(cell, text);
+            }
+
+            closeEditors(null);
+            queueAutosave();
+        });
+    });
+
+    // Removing a shift changes only the browser draft.
+    document.querySelectorAll(".rota-remove-shift-form").forEach(function (form) {
+        form.removeAttribute("onsubmit");
+
+        form.addEventListener("submit", function (event) {
+            event.preventDefault();
+
+            const wrapper = form.closest(".rota-existing-shift");
+            const cell = form.closest("[data-rota-cell]");
+            wrapper?.remove();
+
+            const blank = cell.querySelector("[data-add-shift]");
+            if (blank) blank.hidden = false;
+
+            closeEditors(null);
+            queueAutosave();
+        });
+    });
+
+    // "+" beside a requested shift also changes only the browser draft.
+    document.querySelectorAll(".rota-use-availability-form")
+        .forEach(function (form) {
+            form.addEventListener("submit", function (event) {
+                event.preventDefault();
+
+                const cell = form.closest("[data-rota-cell]");
+                const text = (form.dataset.availabilityShift || "")
+                    .trim()
+                    .toUpperCase();
+
+                if (text) {
+                    ensureShiftDisplay(cell, text);
+                }
+
+                closeEditors(null);
+                queueAutosave();
+            });
+        });
+
+    document.querySelectorAll("[data-cancel-shift]").forEach(function (button) {
+        button.addEventListener("click", function () {
+            closeEditors(null);
+        });
+    });
+
+    function collectRotaState() {
+        return Array.from(
+            document.querySelectorAll("[data-rota-cell]")
+        ).map(function (cell) {
+            return {
+                staff_id: Number(cell.dataset.staffId),
+                date: cell.dataset.shiftDate,
+                shifts: Array.from(
+                    cell.querySelectorAll(".rota-shift-display")
+                )
+                    .filter(button => !button.hidden)
+                    .map(button => button.textContent.trim().toUpperCase())
+                    .filter(Boolean)
+            };
+        });
+    }
+
+
+    function setAutosaveStatus(text, state) {
+        const status = document.getElementById("rota-autosave-status");
+        if (!status) return;
+
+        status.textContent = text;
+        status.dataset.state = state || "";
+    }
+
+    async function saveDraftAutomatically() {
+        if (!draftDirty && autosaveInFlight) {
+            return autosaveInFlight;
+        }
+
+        if (!draftDirty) {
+            return Promise.resolve();
+        }
+
+        draftDirty = false;
+        setAutosaveStatus("Saving…", "saving");
+
+        const body = new FormData();
+        body.set("rota_state", JSON.stringify(collectRotaState()));
+        body.set("issue", "0");
+
+        autosaveInFlight = fetch(saveUrl, {
+            method: "POST",
+            body,
+            headers: {
+                "X-Rota-Autosave": "1"
+            },
+            credentials: "same-origin"
+        })
+            .then(async response => {
+                if (!response.ok) {
+                    throw new Error("Autosave failed");
+                }
+
+                const result = await response.json();
+                setAutosaveStatus(
+                    `Saved ${result.saved_at || ""}`.trim(),
+                    "saved"
+                );
+            })
+            .catch(() => {
+                draftDirty = true;
+                setAutosaveStatus(
+                    "Not saved — press Save draft",
+                    "error"
+                );
+            })
+            .finally(() => {
+                autosaveInFlight = null;
+            });
+
+        return autosaveInFlight;
+    }
+
+    function queueAutosave() {
+        draftDirty = true;
+        setAutosaveStatus("Unsaved changes", "dirty");
+
+        window.clearTimeout(autosaveTimer);
+        autosaveTimer = window.setTimeout(
+            saveDraftAutomatically,
+            900
+        );
+    }
+
+    saveForm.addEventListener("submit", function () {
+        window.clearTimeout(autosaveTimer);
+        draftDirty = false;
+        stateInput.value = JSON.stringify(collectRotaState());
+        setAutosaveStatus("Saving…", "saving");
+    });
+
+    document.querySelectorAll(
+        'form[action*="/rota/profile/"][action$="/archive"], ' +
+        'form[action*="/rota/profile/"][action$="/restore"]'
+    ).forEach(function (profileForm) {
+        profileForm.addEventListener("submit", async function (event) {
+            if (profileForm.dataset.autosaveFlushed === "1") {
+                return;
+            }
+
+            event.preventDefault();
+            window.clearTimeout(autosaveTimer);
+
+            if (draftDirty) {
+                await saveDraftAutomatically();
+            } else if (autosaveInFlight) {
+                await autosaveInFlight;
+            }
+
+            profileForm.dataset.autosaveFlushed = "1";
+            profileForm.submit();
+        });
+    });
+
+    issueButton?.addEventListener("click", function () {
+        if (!confirm("Issue this rota to all staff?")) return;
+
+        issueInput.value = "1";
+        stateInput.value = JSON.stringify(collectRotaState());
+        saveForm.submit();
+    });
+})();
+</script>
+{% endblock %}
