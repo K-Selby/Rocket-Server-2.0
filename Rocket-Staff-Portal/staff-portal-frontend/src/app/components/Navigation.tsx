@@ -7,7 +7,7 @@ import { useInbox } from "../context/InboxContext";
 import { useCurrentUser } from "../context/CurrentUserContext";
 import RocketLogo from "./RocketBrand";
 
-const API = "http://localhost:8080";
+const API = "";
 const BOOKING_PORTAL = process.env.NEXT_PUBLIC_BOOKING_PORTAL_URL || "http://localhost:8000/booking/dashboard";
 
 const links = [

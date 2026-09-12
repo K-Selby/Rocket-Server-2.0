@@ -56,7 +56,7 @@ type ShiftSwapRequest = {
   id: number;
 };
 
-const API = "http://localhost:8080";
+const API = "";
 
 function localDate(date: Date) {
   return [

@@ -7,7 +7,7 @@ import styles from "../login/login.module.css";
 import setupStyles from "./setup.module.css";
 import RocketLogo, { sharedAssetUrl } from "../components/RocketBrand";
 
-const API = "http://localhost:8080";
+const API = "";
 
 export default function SetupPage() {
   const router = useRouter();

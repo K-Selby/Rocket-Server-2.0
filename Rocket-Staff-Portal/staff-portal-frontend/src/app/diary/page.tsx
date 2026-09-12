@@ -38,7 +38,7 @@ type LargeParty = {
 
 type RequestType = "DAY_OFF" | "AVAILABLE";
 
-const API_URL = "http://localhost:8080";
+const API_URL = "";
 
 /* Converts a local date to YYYY-MM-DD without UTC changing the day. */
 function formatLocalDate(date: Date) {

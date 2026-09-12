@@ -6,7 +6,7 @@ import { useCurrentUser } from "../context/CurrentUserContext";
 import { sharedAssetUrl } from "../components/RocketBrand";
 import styles from "./login.module.css";
 
-const API = "http://localhost:8080";
+const API = "";
 
 type Mode = "login" | "request" | "reset";
 

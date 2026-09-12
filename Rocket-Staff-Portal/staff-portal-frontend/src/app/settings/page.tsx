@@ -3,7 +3,7 @@
 import { FormEvent, useState } from "react";
 import { useCurrentUser } from "../context/CurrentUserContext";
 
-const API = "http://localhost:8080";
+const API = "";
 
 export default function AccountSettingsPage() {
   const { currentUser, loadingUser, refreshCurrentUser } = useCurrentUser();

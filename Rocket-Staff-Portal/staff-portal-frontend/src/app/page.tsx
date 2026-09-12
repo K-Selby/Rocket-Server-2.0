@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-const API = "http://localhost:8080";
+const API = "";
 
 export default function HomePage() {
   const router = useRouter();

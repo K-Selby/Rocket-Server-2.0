@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-const API = "http://localhost:8080/api/email";
+const API = "/api/email";
 type EmailStatus = { configured: boolean; connected: boolean; sender: string };
 
 export default function RocketEmailCard() {

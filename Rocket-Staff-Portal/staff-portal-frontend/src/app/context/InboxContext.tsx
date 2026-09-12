@@ -222,12 +222,12 @@ function UserInbox({
 
       try {
         const dayOffUrl =
-          `http://localhost:8080/api/day-off-requests/${
+          `/api/day-off-requests/${
             manager ? "manager" : "mine"
           }?currentUserId=${user!.id}`;
 
         const incomingUrl =
-          `http://localhost:8080/api/shift-swaps/incoming/${user!.id}`;
+          `/api/shift-swaps/incoming/${user!.id}`;
 
         const [
           dayOffResponse,
@@ -239,7 +239,7 @@ function UserInbox({
 
           manager
             ? fetch(
-                `http://localhost:8080/api/shift-swaps/manager/pending?currentUserId=${user!.id}`
+                `/api/shift-swaps/manager/pending?currentUserId=${user!.id}`
               )
             : Promise.resolve(null),
         ]);

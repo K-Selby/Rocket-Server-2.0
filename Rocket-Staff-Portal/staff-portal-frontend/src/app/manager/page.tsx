@@ -10,7 +10,7 @@ import {
   useCurrentUser,
 } from "../context/CurrentUserContext";
 
-const API_URL = "http://localhost:8080";
+const API_URL = "";
 
 type StaffSettings = {
   id: number;

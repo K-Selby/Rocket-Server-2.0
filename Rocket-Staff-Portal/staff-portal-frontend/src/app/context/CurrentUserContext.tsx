@@ -33,7 +33,7 @@ const CurrentUserContext =
     undefined
   );
 
-const API = "http://localhost:8080";
+const API = "";
 
 export function CurrentUserProvider({
   children,

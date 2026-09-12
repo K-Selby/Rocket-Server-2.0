@@ -14,6 +14,7 @@ const nextConfig: NextConfig = {
         { source: "/assets/:path*", destination: "http://127.0.0.1:8001/assets/:path*", basePath: false },
         { source: "/static/:path*", destination: "http://127.0.0.1:8001/static/:path*", basePath: false },
         { source: "/customer-static/:path*", destination: "http://127.0.0.1:8001/customer-static/:path*", basePath: false },
+        { source: "/api/:path*", destination: "http://127.0.0.1:8080/api/:path*", basePath: false },
       ],
       afterFiles: [],
       fallback: [],
