@@ -14,7 +14,7 @@ import uk.co.rocketpub.staffportal.service.LargePartyService;
 
 @RestController
 @RequestMapping("/api/large-parties")
-@CrossOrigin(origins = "http://localhost:8000")
+@CrossOrigin(origins = "https://rocketpubserver.co.uk")
 public class LargePartyController {
 
     private final LargePartyService service;

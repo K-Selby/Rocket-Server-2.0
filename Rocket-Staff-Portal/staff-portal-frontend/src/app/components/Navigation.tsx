@@ -8,7 +8,7 @@ import { useCurrentUser } from "../context/CurrentUserContext";
 import RocketLogo from "./RocketBrand";
 
 const API = "";
-const BOOKING_PORTAL = process.env.NEXT_PUBLIC_BOOKING_PORTAL_URL || "http://localhost:8000/booking/dashboard";
+const BOOKING_PORTAL = process.env.NEXT_PUBLIC_BOOKING_PORTAL_URL || "https://rocketpubserver.co.uk/booking/dashboard";
 
 const links = [
   { href: "/rota", label: "Rota", icon: "calendar" },

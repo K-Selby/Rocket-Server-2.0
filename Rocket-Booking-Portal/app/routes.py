@@ -20,7 +20,7 @@ MICROSOFT_TENANT_ID = os.getenv("MICROSOFT_TENANT_ID")
 MICROSOFT_AUTHORITY = "https://login.microsoftonline.com/consumers"
 MICROSOFT_REDIRECT_URI = os.getenv(
     "MICROSOFT_REDIRECT_URI",
-    "http://localhost:8000/auth/microsoft/callback",
+    "https://rocketpubserver.co.uk/booking/auth/microsoft/callback",
 )
 MICROSOFT_SCOPES = ["Mail.Send"]
 

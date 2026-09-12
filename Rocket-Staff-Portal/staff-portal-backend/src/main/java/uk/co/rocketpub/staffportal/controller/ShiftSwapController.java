@@ -18,7 +18,7 @@ import uk.co.rocketpub.staffportal.service.ShiftSwapService;
 
 @RestController
 @RequestMapping("/api/shift-swaps")
-@CrossOrigin(origins = "http://localhost:8000")
+@CrossOrigin(origins = "https://rocketpubserver.co.uk")
 public class ShiftSwapController {
 
     private final ShiftSwapService service;

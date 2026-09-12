@@ -1,5 +1,5 @@
 const SHARED_ASSET_ROOT = (
-  process.env.NEXT_PUBLIC_SHARED_ASSETS_URL || "http://localhost:8000/assets"
+  process.env.NEXT_PUBLIC_SHARED_ASSETS_URL || "https://rocketpubserver.co.uk/assets"
 ).replace(/\/$/, "");
 
 export function sharedAssetUrl(path: string) {

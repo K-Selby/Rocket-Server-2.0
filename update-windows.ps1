@@ -86,16 +86,17 @@ function Start-RocketServers {
     }
 
     $env:ROCKET_FLASK_PORT = "8001"
-    $env:ROCKET_STAFF_FRONTEND_URL = "http://localhost:8000/staff"
+    $env:ROCKET_STAFF_FRONTEND_URL = "https://rocketpubserver.co.uk/staff"
+    $env:MICROSOFT_REDIRECT_URI = "https://rocketpubserver.co.uk/api/email/microsoft/callback"
 
     Start-HiddenProcess "flask" $venvPython @("run.py") $BookingRoot
     Start-HiddenProcess "spring" $java @("-jar", $jar.FullName) $BackendRoot
     Start-HiddenProcess "frontend" $npm @("run", "start") $FrontendRoot
 
     Write-Host "Rocket Server is running in the background."
-    Write-Host "Customer: http://localhost:8000/"
-    Write-Host "Booking:  http://localhost:8000/booking"
-    Write-Host "Staff:    http://localhost:8000/staff"
+    Write-Host "Customer: https://rocketpubserver.co.uk/"
+    Write-Host "Booking:  https://rocketpubserver.co.uk/booking"
+    Write-Host "Staff:    https://rocketpubserver.co.uk/staff"
     Write-Host "Logs:     $LogRoot"
 }
 
@@ -143,4 +144,3 @@ catch {
 finally {
     Pop-Location
 }
-

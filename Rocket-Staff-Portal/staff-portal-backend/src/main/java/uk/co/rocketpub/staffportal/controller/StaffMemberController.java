@@ -25,12 +25,12 @@ import uk.co.rocketpub.staffportal.service.StaffMemberService;
 
 @RestController
 @RequestMapping("/api/staff")
-@CrossOrigin(origins = "http://localhost:8000", allowCredentials = "true")
+@CrossOrigin(origins = "https://rocketpubserver.co.uk", allowCredentials = "true")
 public class StaffMemberController {
     private final StaffMemberService service;
     private final AuthService authService;
 
-    @Value("${rocket.email.frontend-url:http://localhost:8000/staff}")
+    @Value("${rocket.email.frontend-url:https://rocketpubserver.co.uk/staff}")
     private String frontendUrl;
 
     public StaffMemberController(StaffMemberService service, AuthService authService) {

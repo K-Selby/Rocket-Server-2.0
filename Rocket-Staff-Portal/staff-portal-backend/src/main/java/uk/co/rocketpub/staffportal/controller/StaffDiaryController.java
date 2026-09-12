@@ -20,7 +20,7 @@ import uk.co.rocketpub.staffportal.service.StaffDiaryService;
 
 @RestController
 @RequestMapping("/api/diary")
-@CrossOrigin(origins = "http://localhost:8000")
+@CrossOrigin(origins = "https://rocketpubserver.co.uk")
 public class StaffDiaryController {
 
     private final StaffDiaryService service;

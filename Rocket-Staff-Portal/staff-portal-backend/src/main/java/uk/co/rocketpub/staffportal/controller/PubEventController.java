@@ -19,7 +19,7 @@ import uk.co.rocketpub.staffportal.service.PubEventService;
 
 @RestController
 @RequestMapping("/api/events")
-@CrossOrigin(origins = "http://localhost:8000")
+@CrossOrigin(origins = "https://rocketpubserver.co.uk")
 public class PubEventController {
 
     private final PubEventService service;

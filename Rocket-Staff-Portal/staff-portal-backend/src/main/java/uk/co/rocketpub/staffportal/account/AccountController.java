@@ -16,11 +16,11 @@ import uk.co.rocketpub.staffportal.auth.AuthUser;
 
 @RestController
 @RequestMapping("/api/account")
-@CrossOrigin(origins = "http://localhost:8000", allowCredentials = "true")
+@CrossOrigin(origins = "https://rocketpubserver.co.uk", allowCredentials = "true")
 public class AccountController {
     private final AccountService accountService;
 
-    @Value("${rocket.email.frontend-url:http://localhost:8000/staff}")
+    @Value("${rocket.email.frontend-url:https://rocketpubserver.co.uk/staff}")
     private String frontendUrl;
 
     public AccountController(AccountService accountService) {

@@ -100,7 +100,7 @@ def create_app():
     app.config["ROCKET_SHARED_ASSETS_PATH"] = str(shared_assets_path)
     app.config["STAFF_PORTAL_URL"] = os.environ.get(
         "ROCKET_STAFF_PORTAL_URL",
-        "http://localhost:8000/staff",
+        "https://rocketpubserver.co.uk/staff",
     ).rstrip("/")
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
