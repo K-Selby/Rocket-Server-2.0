@@ -24,6 +24,11 @@ For normal updates, run:
 .\update-windows.ps1
 ```
 
+Alternatively, copy `Rocket-Server-Update.bat` from the repository to the
+Desktop and double-click it. The batch file requests Administrator access,
+records the complete result in `Rocket-Server-Update.log` on the Desktop, and
+keeps the result window open.
+
 The updater checks GitHub first. When there is no new commit and all three
 services are running, it exits. If a service is missing, it restarts the server.
 When an update exists, it stops the background processes, fast-forwards the
