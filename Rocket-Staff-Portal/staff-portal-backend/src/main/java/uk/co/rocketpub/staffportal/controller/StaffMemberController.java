@@ -2,7 +2,6 @@ package uk.co.rocketpub.staffportal.controller;
 
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -21,6 +20,7 @@ import uk.co.rocketpub.staffportal.auth.AuthService;
 import uk.co.rocketpub.staffportal.auth.AuthUser;
 import uk.co.rocketpub.staffportal.model.StaffMember;
 import uk.co.rocketpub.staffportal.model.StaffRole;
+import uk.co.rocketpub.staffportal.security.RequestOriginValidator;
 import uk.co.rocketpub.staffportal.service.StaffMemberService;
 
 @RestController
@@ -29,13 +29,15 @@ import uk.co.rocketpub.staffportal.service.StaffMemberService;
 public class StaffMemberController {
     private final StaffMemberService service;
     private final AuthService authService;
+    private final RequestOriginValidator originValidator;
 
-    @Value("${rocket.email.frontend-url:https://rocketpubserver.co.uk/staff}")
-    private String frontendUrl;
-
-    public StaffMemberController(StaffMemberService service, AuthService authService) {
+    public StaffMemberController(
+            StaffMemberService service,
+            AuthService authService,
+            RequestOriginValidator originValidator) {
         this.service = service;
         this.authService = authService;
+        this.originValidator = originValidator;
     }
 
     @GetMapping
@@ -56,7 +58,7 @@ public class StaffMemberController {
             HttpSession session,
             @RequestHeader(value = "Origin", required = false) String origin) {
 
-        requireOrigin(origin);
+        originValidator.requireAllowed(origin);
         requireManager(session);
         return service.createStaffMember(staffMember);
     }
@@ -68,7 +70,7 @@ public class StaffMemberController {
             HttpSession session,
             @RequestHeader(value = "Origin", required = false) String origin) {
 
-        requireOrigin(origin);
+        originValidator.requireAllowed(origin);
         requireManager(session);
         return service.updateStaffMember(id, staffMember);
     }
@@ -79,7 +81,7 @@ public class StaffMemberController {
             HttpSession session,
             @RequestHeader(value = "Origin", required = false) String origin) {
 
-        requireOrigin(origin);
+        originValidator.requireAllowed(origin);
         requireManager(session);
         service.deactivateStaffMember(id);
     }
@@ -90,7 +92,7 @@ public class StaffMemberController {
             HttpSession session,
             @RequestHeader(value = "Origin", required = false) String origin) {
 
-        requireOrigin(origin);
+        originValidator.requireAllowed(origin);
         return service.resetPassword(id, requireManager(session));
     }
 
@@ -102,11 +104,5 @@ public class StaffMemberController {
         }
 
         return user;
-    }
-
-    private void requireOrigin(String origin) {
-        if (!frontendUrl.equals(origin)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Request origin is not allowed");
-        }
     }
 }

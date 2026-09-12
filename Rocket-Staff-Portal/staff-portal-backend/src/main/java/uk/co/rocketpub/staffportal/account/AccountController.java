@@ -1,7 +1,5 @@
 package uk.co.rocketpub.staffportal.account;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -9,22 +7,22 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
-
 import jakarta.servlet.http.HttpSession;
 import uk.co.rocketpub.staffportal.auth.AuthUser;
+import uk.co.rocketpub.staffportal.security.RequestOriginValidator;
 
 @RestController
 @RequestMapping("/api/account")
 @CrossOrigin(origins = "https://rocketpubserver.co.uk", allowCredentials = "true")
 public class AccountController {
     private final AccountService accountService;
+    private final RequestOriginValidator originValidator;
 
-    @Value("${rocket.email.frontend-url:https://rocketpubserver.co.uk/staff}")
-    private String frontendUrl;
-
-    public AccountController(AccountService accountService) {
+    public AccountController(
+            AccountService accountService,
+            RequestOriginValidator originValidator) {
         this.accountService = accountService;
+        this.originValidator = originValidator;
     }
 
     @PostMapping("/password")
@@ -33,7 +31,7 @@ public class AccountController {
             HttpSession session,
             @RequestHeader(value = "Origin", required = false) String origin) {
 
-        requireOrigin(origin);
+        originValidator.requireAllowed(origin);
         return accountService.changePassword(request, session);
     }
 
@@ -43,7 +41,7 @@ public class AccountController {
             HttpSession session,
             @RequestHeader(value = "Origin", required = false) String origin) {
 
-        requireOrigin(origin);
+        originValidator.requireAllowed(origin);
         return accountService.startEmailVerification(request, session);
     }
 
@@ -52,7 +50,7 @@ public class AccountController {
             HttpSession session,
             @RequestHeader(value = "Origin", required = false) String origin) {
 
-        requireOrigin(origin);
+        originValidator.requireAllowed(origin);
         return accountService.resendEmailVerification(session);
     }
 
@@ -62,7 +60,7 @@ public class AccountController {
             HttpSession session,
             @RequestHeader(value = "Origin", required = false) String origin) {
 
-        requireOrigin(origin);
+        originValidator.requireAllowed(origin);
         return accountService.verifyEmail(request, session);
     }
 
@@ -71,13 +69,7 @@ public class AccountController {
             HttpSession session,
             @RequestHeader(value = "Origin", required = false) String origin) {
 
-        requireOrigin(origin);
+        originValidator.requireAllowed(origin);
         return accountService.cancelPendingEmail(session);
-    }
-
-    private void requireOrigin(String origin) {
-        if (!frontendUrl.equals(origin)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Request origin is not allowed");
-        }
     }
 }

@@ -1,5 +1,7 @@
 param(
-    [switch]$Force
+    [switch]$Force,
+    [switch]$Rebuild,
+    [switch]$Startup
 )
 
 $ErrorActionPreference = "Stop"
@@ -11,45 +13,59 @@ $BackendRoot = Join-Path $ProjectRoot "Rocket-Staff-Portal\staff-portal-backend"
 $RuntimeRoot = Join-Path $ProjectRoot "runtime"
 $LogRoot = Join-Path $RuntimeRoot "logs"
 $PidRoot = Join-Path $RuntimeRoot "pids"
+$RocketPorts = 8000, 8001, 8080
 
 New-Item -ItemType Directory -Force $LogRoot, $PidRoot | Out-Null
 
 function Invoke-Checked {
-    param(
-        [string]$Description,
-        [scriptblock]$Command
-    )
-
+    param([string]$Description, [scriptblock]$Command)
     & $Command
     if ($LASTEXITCODE -ne 0) {
         throw "$Description failed with exit code $LASTEXITCODE."
     }
 }
 
+function Get-RocketListeners {
+    @(Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue |
+        Where-Object { $_.LocalPort -in $RocketPorts })
+}
+
+function Test-RocketServersRunning {
+    $listeningPorts = @(Get-RocketListeners | Select-Object -ExpandProperty LocalPort -Unique)
+    return (@($RocketPorts | Where-Object { $_ -notin $listeningPorts }).Count -eq 0)
+}
+
 function Stop-RocketServers {
-    $rocketPorts = 8000, 8001, 8080
+    $savedProcessIds = @(Get-ChildItem $PidRoot -Filter "*.pid" -ErrorAction SilentlyContinue |
+        ForEach-Object { Get-Content $_.FullName -ErrorAction SilentlyContinue } |
+        Where-Object { $_ } |
+        ForEach-Object { [int]$_ })
 
-    Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue |
-        Where-Object { $_.LocalPort -in $rocketPorts } |
-        Select-Object -ExpandProperty OwningProcess -Unique |
-        ForEach-Object {
-            Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue
+    for ($attempt = 1; $attempt -le 6; $attempt++) {
+        $listeningProcessIds = @(Get-RocketListeners |
+            Select-Object -ExpandProperty OwningProcess -Unique)
+        $processIds = @($savedProcessIds + $listeningProcessIds | Select-Object -Unique)
+
+        foreach ($processId in $processIds) {
+            Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue
         }
 
-    Get-ChildItem $PidRoot -Filter "*.pid" -ErrorAction SilentlyContinue | ForEach-Object {
-        $savedPid = Get-Content $_.FullName -ErrorAction SilentlyContinue
-        if ($savedPid) {
-            Stop-Process -Id ([int]$savedPid) -Force -ErrorAction SilentlyContinue
+        Start-Sleep -Seconds 1
+        if (@(Get-RocketListeners).Count -eq 0) {
+            break
         }
-        Remove-Item $_.FullName -Force -ErrorAction SilentlyContinue
     }
 
-    Start-Sleep -Seconds 2
+    Get-ChildItem $PidRoot -Filter "*.pid" -ErrorAction SilentlyContinue |
+        Remove-Item -Force -ErrorAction SilentlyContinue
 
-    $remainingPorts = Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue |
-        Where-Object { $_.LocalPort -in $rocketPorts }
-    if ($remainingPorts) {
-        throw "One or more Rocket Server ports could not be stopped."
+    $remaining = @(Get-RocketListeners)
+    if ($remaining.Count -gt 0) {
+        $details = $remaining | ForEach-Object {
+            $process = Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue
+            "port $($_.LocalPort): $($process.ProcessName) (PID $($_.OwningProcess))"
+        }
+        throw "Rocket Server could not release $($details -join ', '). Restart Windows, then run the update again."
     }
 }
 
@@ -60,45 +76,54 @@ function Start-HiddenProcess {
         [string[]]$ArgumentList,
         [string]$WorkingDirectory
     )
-
-    $process = Start-Process `
-        -FilePath $FilePath `
-        -ArgumentList $ArgumentList `
-        -WorkingDirectory $WorkingDirectory `
-        -WindowStyle Hidden `
+    $process = Start-Process -FilePath $FilePath -ArgumentList $ArgumentList `
+        -WorkingDirectory $WorkingDirectory -WindowStyle Hidden `
         -RedirectStandardOutput (Join-Path $LogRoot "$Name.log") `
-        -RedirectStandardError (Join-Path $LogRoot "$Name-error.log") `
-        -PassThru
-
+        -RedirectStandardError (Join-Path $LogRoot "$Name-error.log") -PassThru
     Set-Content (Join-Path $PidRoot "$Name.pid") $process.Id
 }
 
-function Install-And-Build {
+function Install-PythonDependencies {
     $python = (Get-Command python.exe -ErrorAction Stop).Source
-    $npm = (Get-Command npm.cmd -ErrorAction Stop).Source
-
     $venvPython = Join-Path $BookingRoot ".venv\Scripts\python.exe"
     if (-not (Test-Path $venvPython)) {
-        & $python -m venv (Join-Path $BookingRoot ".venv")
+        Invoke-Checked "Python virtual environment creation" {
+            & $python -m venv (Join-Path $BookingRoot ".venv")
+        }
     }
     Invoke-Checked "Python dependency installation" {
         & $venvPython -m pip install --disable-pip-version-check -r (Join-Path $BookingRoot "requirements.txt")
     }
+}
 
+function Install-FrontendDependencies {
+    $npm = (Get-Command npm.cmd -ErrorAction Stop).Source
     Push-Location $FrontendRoot
     try {
         Invoke-Checked "Frontend dependency installation" { & $npm ci }
+    }
+    finally {
+        Pop-Location
+    }
+}
+
+function Build-Frontend {
+    $npm = (Get-Command npm.cmd -ErrorAction Stop).Source
+    Push-Location $FrontendRoot
+    try {
         Invoke-Checked "Frontend lint" { & $npm run lint }
         Invoke-Checked "Frontend build" { & $npm run build }
     }
     finally {
         Pop-Location
     }
+}
 
+function Build-Backend {
     Push-Location $BackendRoot
     try {
         Invoke-Checked "Spring build" {
-            & (Join-Path $BackendRoot "mvnw.cmd") clean package -DskipTests
+            & (Join-Path $BackendRoot "mvnw.cmd") package -DskipTests
         }
     }
     finally {
@@ -106,16 +131,26 @@ function Install-And-Build {
     }
 }
 
+function Get-SpringJar {
+    Get-ChildItem (Join-Path $BackendRoot "target") -Filter "*.jar" -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -notlike "*.original" } |
+        Select-Object -First 1
+}
+
 function Start-RocketServers {
     $venvPython = Join-Path $BookingRoot ".venv\Scripts\python.exe"
     $npm = (Get-Command npm.cmd -ErrorAction Stop).Source
     $java = (Get-Command java.exe -ErrorAction Stop).Source
-    $jar = Get-ChildItem (Join-Path $BackendRoot "target") -Filter "*.jar" |
-        Where-Object { $_.Name -notlike "*.original" } |
-        Select-Object -First 1
+    $jar = Get-SpringJar
 
+    if (-not (Test-Path $venvPython)) {
+        throw "Python dependencies are missing. Run setup-windows.ps1 again."
+    }
     if (-not $jar) {
-        throw "The Spring application was not built. Run setup-windows.ps1 again."
+        throw "The Spring application is missing. Run setup-windows.ps1 again."
+    }
+    if (-not (Test-Path (Join-Path $FrontendRoot ".next\BUILD_ID"))) {
+        throw "The Staff Portal build is missing. Run setup-windows.ps1 again."
     }
 
     $env:ROCKET_FLASK_PORT = "8001"
@@ -126,6 +161,13 @@ function Start-RocketServers {
     Start-HiddenProcess "spring" $java @("-jar", $jar.FullName) $BackendRoot
     Start-HiddenProcess "frontend" $npm @("run", "start") $FrontendRoot
 
+    Start-Sleep -Seconds 4
+    if (-not (Test-RocketServersRunning)) {
+        $listeningPorts = @(Get-RocketListeners | Select-Object -ExpandProperty LocalPort -Unique)
+        $missingPorts = @($RocketPorts | Where-Object { $_ -notin $listeningPorts })
+        throw "Rocket Server did not start on port(s) $($missingPorts -join ', '). Check $LogRoot."
+    }
+
     Write-Host "Rocket Server is running in the background."
     Write-Host "Customer: https://rocketpubserver.co.uk/"
     Write-Host "Booking:  https://rocketpubserver.co.uk/booking"
@@ -135,9 +177,10 @@ function Start-RocketServers {
 
 Push-Location $ProjectRoot
 try {
-    $hasUpdate = $Force
+    $changedFiles = @()
+    $hasUpdate = $false
 
-    if (-not $Force) {
+    if (-not $Startup -and -not $Force) {
         Invoke-Checked "Git fetch" { & git fetch origin }
         $branch = (& git branch --show-current).Trim()
         $remoteRef = "origin/$branch"
@@ -149,25 +192,55 @@ try {
         $localCommit = (& git rev-parse HEAD).Trim()
         $remoteCommit = (& git rev-parse $remoteRef).Trim()
         $hasUpdate = $localCommit -ne $remoteCommit
+        if ($hasUpdate) {
+            $changedFiles = @(& git diff --name-only $localCommit $remoteCommit)
+        }
     }
 
-    if (-not $hasUpdate) {
-        Write-Host "Rocket Server is already up to date. Nothing was stopped."
-        exit 0
+    if (-not $hasUpdate -and -not $Force -and -not $Startup) {
+        if (Test-RocketServersRunning) {
+            Write-Host "Rocket Server is already up to date and running."
+            exit 0
+        }
+        Write-Host "Rocket Server is up to date. Restarting missing services."
     }
 
-    $localChanges = & git status --porcelain
-    if ($localChanges) {
-        throw "Local project files have changes. Update stopped so they are not overwritten."
+    if ($hasUpdate) {
+        $localChanges = & git status --porcelain
+        if ($localChanges) {
+            throw "Local project files have changes. Update stopped so they are not overwritten."
+        }
     }
 
     Stop-RocketServers
-
-    if (-not $Force) {
+    if ($hasUpdate) {
         Invoke-Checked "Git update" { & git merge --ff-only $remoteRef }
     }
 
-    Install-And-Build
+    $venvPython = Join-Path $BookingRoot ".venv\Scripts\python.exe"
+    $frontendBuild = Join-Path $FrontendRoot ".next\BUILD_ID"
+    $nodeModules = Join-Path $FrontendRoot "node_modules"
+    $jar = Get-SpringJar
+
+    $pythonRequirementsChanged = $Rebuild -or
+        ($changedFiles -contains "Rocket-Booking-Portal/requirements.txt") -or
+        -not (Test-Path $venvPython)
+    $frontendChanged = $Rebuild -or
+        @($changedFiles | Where-Object { $_ -like "Rocket-Staff-Portal/staff-portal-frontend/*" }).Count -gt 0 -or
+        -not (Test-Path $frontendBuild)
+    $frontendDependenciesChanged = $Rebuild -or
+        ($changedFiles -contains "Rocket-Staff-Portal/staff-portal-frontend/package.json") -or
+        ($changedFiles -contains "Rocket-Staff-Portal/staff-portal-frontend/package-lock.json") -or
+        -not (Test-Path $nodeModules)
+    $backendChanged = $Rebuild -or
+        @($changedFiles | Where-Object { $_ -like "Rocket-Staff-Portal/staff-portal-backend/*" }).Count -gt 0 -or
+        -not $jar
+
+    if ($pythonRequirementsChanged) { Install-PythonDependencies }
+    if ($frontendDependenciesChanged) { Install-FrontendDependencies }
+    if ($frontendChanged) { Build-Frontend }
+    if ($backendChanged) { Build-Backend }
+
     Start-RocketServers
 }
 catch {

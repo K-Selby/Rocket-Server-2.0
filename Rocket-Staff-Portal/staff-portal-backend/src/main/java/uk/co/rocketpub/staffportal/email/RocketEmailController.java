@@ -3,7 +3,6 @@ package uk.co.rocketpub.staffportal.email;
 import java.net.URI;
 import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,6 +11,7 @@ import org.springframework.web.server.ResponseStatusException;
 import jakarta.servlet.http.HttpSession;
 import uk.co.rocketpub.staffportal.auth.AuthService;
 import uk.co.rocketpub.staffportal.model.StaffRole;
+import uk.co.rocketpub.staffportal.security.RequestOriginValidator;
 
 @RestController
 @RequestMapping("/api/email")
@@ -19,13 +19,15 @@ import uk.co.rocketpub.staffportal.model.StaffRole;
 public class RocketEmailController {
     private final RocketEmailService emailService;
     private final AuthService authService;
+    private final RequestOriginValidator originValidator;
 
-    @Value("${rocket.email.frontend-url:https://rocketpubserver.co.uk/staff}")
-    private String frontendUrl;
-
-    public RocketEmailController(RocketEmailService emailService, AuthService authService) {
+    public RocketEmailController(
+            RocketEmailService emailService,
+            AuthService authService,
+            RequestOriginValidator originValidator) {
         this.emailService = emailService;
         this.authService = authService;
+        this.originValidator = originValidator;
     }
 
     @GetMapping("/status")
@@ -39,7 +41,7 @@ public class RocketEmailController {
             HttpSession session,
             @RequestHeader(value = "Origin", required = false) String origin) {
         requireAdmin(session);
-        requireOrigin(origin);
+        originValidator.requireAllowed(origin);
         return Map.of("authorizationUrl", emailService.startMicrosoftConnection(session));
     }
 
@@ -60,7 +62,7 @@ public class RocketEmailController {
             HttpSession session,
             @RequestHeader(value = "Origin", required = false) String origin) {
         requireAdmin(session);
-        requireOrigin(origin);
+        originValidator.requireAllowed(origin);
         emailService.disconnect();
         return Map.of("disconnected", true);
     }
@@ -74,12 +76,6 @@ public class RocketEmailController {
     private void requireAdmin(HttpSession session) {
         if (authService.currentUser(session).role() != StaffRole.ADMIN) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Administrator access required");
-        }
-    }
-
-    private void requireOrigin(String origin) {
-        if (!frontendUrl.equals(origin)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Request origin is not allowed");
         }
     }
 }
