@@ -338,6 +338,11 @@ textarea {
   display: none;
 }
 
+.mobile-sidebar-toggle,
+.mobile-sidebar-backdrop {
+  display: none;
+}
+
 
 /* =========================================================
    SHARED PAGE PANEL
@@ -618,7 +623,9 @@ h1 {
 }
 
 .rota-scroll {
-  overflow-x: auto;
+  max-height: calc(100vh - 3rem);
+
+  overflow: auto;
 
   border-radius: 0.7rem;
 }
@@ -644,10 +651,16 @@ h1 {
 }
 
 .rota-table thead th {
+  position: sticky;
+
+  top: 0;
+
   height: 4.6rem;
 
   background: #e5f0e2;
   color: #234b32;
+
+  z-index: 5;
 }
 
 .rota-table thead th:first-child {
@@ -3079,21 +3092,117 @@ h1 {
   }
 
   .desktop-sidebar {
-    display: none;
-  }
+    width: 3.75rem;
 
-  .mobile-bottom-nav {
-    position: fixed;
-
-    inset: auto 0 0;
+    padding: 0.65rem 0.45rem;
 
     display: flex;
 
-    background: white;
+    overflow: hidden;
 
-    border-top: 1px solid #d8ded8;
+    transition: width 180ms ease, box-shadow 180ms ease;
+  }
 
-    z-index: 100;
+  .desktop-sidebar.mobile-sidebar-open {
+    width: min(17rem, 84vw);
+
+    padding: 0.65rem 0.9rem 1.1rem;
+
+    box-shadow: 14px 0 36px rgba(0, 0, 0, 0.35);
+
+    z-index: 302;
+  }
+
+  .mobile-sidebar-toggle {
+    width: 2.75rem;
+    height: 2.75rem;
+
+    margin: 0 auto 0.8rem;
+    padding: 0.68rem;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+
+    border: 1px solid rgba(214, 184, 90, 0.55);
+    border-radius: 0.55rem;
+
+    background: rgba(255, 255, 255, 0.06);
+
+    cursor: pointer;
+  }
+
+  .mobile-sidebar-toggle span {
+    width: 100%;
+    height: 2px;
+
+    border-radius: 999px;
+
+    background: var(--sidebar-gold);
+  }
+
+  .mobile-sidebar-backdrop {
+    position: fixed;
+
+    inset: 0;
+
+    display: block;
+
+    border: 0;
+
+    background: rgba(0, 22, 13, 0.48);
+
+    z-index: 301;
+  }
+
+  .desktop-sidebar:not(.mobile-sidebar-open) .sidebar-title,
+  .desktop-sidebar:not(.mobile-sidebar-open) .sidebar-account-copy,
+  .desktop-sidebar:not(.mobile-sidebar-open) .sidebar-account-chevron,
+  .desktop-sidebar:not(.mobile-sidebar-open) .sidebar-account-menu,
+  .desktop-sidebar:not(.mobile-sidebar-open) .sidebar-link-label,
+  .desktop-sidebar:not(.mobile-sidebar-open) .navigation-badge {
+    display: none;
+  }
+
+  .desktop-sidebar:not(.mobile-sidebar-open) .sidebar-account {
+    margin: 0 0 0.7rem;
+  }
+
+  .desktop-sidebar:not(.mobile-sidebar-open) .sidebar-account-trigger,
+  .desktop-sidebar:not(.mobile-sidebar-open) .sidebar-links a,
+  .desktop-sidebar:not(.mobile-sidebar-open) .sidebar-bottom a {
+    min-width: 2.75rem;
+    width: 2.75rem;
+
+    padding: 0.7rem;
+
+    justify-content: center;
+  }
+
+  .desktop-sidebar .sidebar-links a,
+  .desktop-sidebar .sidebar-account-menu a,
+  .desktop-sidebar .sidebar-account-menu button,
+  .desktop-sidebar .sidebar-bottom a {
+    color: var(--sidebar-gold);
+  }
+
+  .desktop-sidebar:not(.mobile-sidebar-open) .sidebar-avatar {
+    width: 1.35rem;
+    height: 1.35rem;
+
+    border: 0;
+
+    background: transparent;
+
+    color: var(--sidebar-gold);
+  }
+
+  .desktop-sidebar:not(.mobile-sidebar-open) .sidebar-bottom a {
+    border-color: rgba(214, 184, 90, 0.5);
+  }
+
+  .mobile-bottom-nav {
+    display: none;
   }
 
   .mobile-bottom-nav a {
@@ -3133,12 +3242,12 @@ h1 {
   }
 
   .portal-shell main {
-    width: calc(100% - 1rem);
+    width: calc(100% - 4.25rem);
 
     min-height: calc(100vh - 5.5rem);
 
-    margin: 0.5rem;
-    padding: 1rem 0.8rem 5.5rem;
+    margin: 0.5rem 0.5rem 0.5rem 4.25rem;
+    padding: 1rem 0.8rem 2rem;
 
     border-radius: 0.75rem;
   }

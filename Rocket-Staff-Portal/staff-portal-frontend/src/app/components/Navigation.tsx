@@ -49,6 +49,7 @@ export default function Navigation() {
   const { currentUser, clearCurrentUser } = useCurrentUser();
 
   const [accountOpen, setAccountOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
 
   const canManage = currentUser?.role === "MANAGER" || currentUser?.role === "ADMIN";
@@ -73,7 +74,19 @@ export default function Navigation() {
 
   return (
     <>
-      <aside className="desktop-sidebar">
+      <aside className={`desktop-sidebar ${mobileMenuOpen ? "mobile-sidebar-open" : ""}`}>
+        <button
+          type="button"
+          className="mobile-sidebar-toggle"
+          aria-label={mobileMenuOpen ? "Close navigation" : "Open navigation"}
+          aria-expanded={mobileMenuOpen}
+          onClick={() => setMobileMenuOpen(open => !open)}
+        >
+          <span />
+          <span />
+          <span />
+        </button>
+
         <div className="sidebar-title">
           <RocketLogo className="sidebar-logo" compact decorative />
           <div className="sidebar-brand-copy">
@@ -135,22 +148,37 @@ export default function Navigation() {
 
         <nav className="sidebar-links">
           {visibleLinks.map(link => (
-            <Link key={link.href} href={staffPortalUrl(link.href)} className={pathname === link.href ? "active" : ""}>
+            <Link
+              key={link.href}
+              href={staffPortalUrl(link.href)}
+              className={pathname === link.href ? "active" : ""}
+              aria-label={link.label}
+              onClick={() => setMobileMenuOpen(false)}
+            >
               <NavIcon name={link.icon} />
-              <span>{link.label}</span>
+              <span className="sidebar-link-label">{link.label}</span>
               {link.href === "/inbox" && badge}
             </Link>
           ))}
         </nav>
 
         <div className="sidebar-bottom">
-          <a href={BOOKING_PORTAL}>
+          <a href={BOOKING_PORTAL} aria-label="Booking Portal">
             <NavIcon name="external" />
-            <span>Booking Portal</span>
-            <span aria-hidden="true">→</span>
+            <span className="sidebar-link-label">Booking Portal</span>
+            <span className="sidebar-link-label" aria-hidden="true">→</span>
           </a>
         </div>
       </aside>
+
+      {mobileMenuOpen && (
+        <button
+          type="button"
+          className="mobile-sidebar-backdrop"
+          aria-label="Close navigation"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
 
       <nav className="mobile-bottom-nav">
         {[...visibleLinks, { href: "/settings", label: "Account" }].map(link => (
