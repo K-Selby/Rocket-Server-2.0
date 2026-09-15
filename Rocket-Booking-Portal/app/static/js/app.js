@@ -104,7 +104,7 @@ function setupBookingTimeValidation() {
         }
 
         return (
-            "The earliest available booking time is 12:15pm and " +
+            "The earliest available booking time is 12:00pm and " +
             `the latest available time is ${latestDisplay}.`
         );
     }
@@ -125,7 +125,7 @@ function setupBookingTimeValidation() {
 
         const invalidDate = dateInput.value < today;
         const invalidHours = (
-            timeInput.value < "12:15" ||
+            timeInput.value < "12:00" ||
             timeInput.value > latestTime()
         );
         const pastToday = (

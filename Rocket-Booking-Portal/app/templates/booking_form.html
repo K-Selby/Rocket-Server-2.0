@@ -88,7 +88,7 @@
                        value="{% if booking %}{{ booking.booking_time.strftime('%H:%M') }}{% endif %}"
                        required>
                 <span class="field-note">
-                    12:15pm–7:30pm, or 12:15pm–7:00pm on Sundays.
+                    12:00pm–7:30pm, or 12:00pm–7:00pm on Sundays.
                 </span>
             </label>
 
@@ -98,6 +98,7 @@
                        name="party_size"
                        id="party-size"
                        min="1"
+                       max="20"
                        value="{{ booking.party_size if booking else '' }}"
                        required>
             </label>

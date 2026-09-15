@@ -167,9 +167,10 @@ from app.models import (
 main = Blueprint("main", __name__)
 
 STANDARD_BOOKING_DURATION = 150
-EARLIEST_BOOKING = "12:15"
+EARLIEST_BOOKING = "12:00"
 LATEST_BOOKING = "19:30"
 SUNDAY_LATEST_BOOKING = "19:00"
+MAX_STANDARD_BOOKING_SIZE = 20
 
 
 ROLE_ORDER = {
@@ -911,7 +912,7 @@ def booking_time_error_message(date_value, booking_time=None):
         return "That time has already passed. Please choose a later time."
 
     return (
-        "The earliest available booking time is 12:15pm and the latest "
+        "The earliest available booking time is 12:00pm and the latest "
         f"available time is {latest_text}."
     )
 
@@ -6828,6 +6829,13 @@ def booking_form_handler(booking=None):
             )
             return redirect(request.url)
 
+        if party_size < 1 or party_size > MAX_STANDARD_BOOKING_SIZE:
+            flash(
+                f"Normal table bookings can be for 1 to {MAX_STANDARD_BOOKING_SIZE} people.",
+                "error",
+            )
+            return redirect(request.url)
+
         if high_chairs_required < 0 or high_chairs_required > party_size:
             flash(
                 "High chairs required cannot be greater than the total party size.",
@@ -7291,6 +7299,13 @@ def edit_repeat_booking(repeat_id):
 
         if weekday is None or not party_size:
             flash("Day, time and party size are required.", "error")
+            return redirect(request.url)
+
+        if party_size < 1 or party_size > MAX_STANDARD_BOOKING_SIZE:
+            flash(
+                f"Repeat table bookings can be for 1 to {MAX_STANDARD_BOOKING_SIZE} people.",
+                "error",
+            )
             return redirect(request.url)
 
         earliest = datetime.strptime(EARLIEST_BOOKING, "%H:%M").time()
