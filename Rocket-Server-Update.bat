@@ -222,22 +222,19 @@ goto :success
 call :stage "Stopping all Rocket Server processes"
 set "FAILED_STAGE=Stopping Rocket Server processes"
 
-for /l %%R in (1,1,10) do (
-    for /f %%P in ('powershell.exe -NoProfile -Command "Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue ^| Where-Object { $_.LocalPort -in 8000,8001,8080 } ^| Select-Object -ExpandProperty OwningProcess -Unique"') do (
-        taskkill.exe /PID %%P /T /F
-    )
+taskkill.exe /IM node.exe /T /F >nul 2>&1
+taskkill.exe /IM java.exe /T /F >nul 2>&1
+taskkill.exe /IM python.exe /T /F >nul 2>&1
+taskkill.exe /IM pythonw.exe /T /F >nul 2>&1
 
-    for /f %%P in ('powershell.exe -NoProfile -Command "Get-CimInstance Win32_Process -ErrorAction SilentlyContinue ^| Where-Object { $_.Name -match '^(node^|java^|python^|pythonw^|npm^|cmd)\.exe$' -and $_.CommandLine -and $_.CommandLine -like '*%PROJECT%*' } ^| Select-Object -ExpandProperty ProcessId"') do (
-        if not "%%P"=="%PROCESS_ID%" taskkill.exe /PID %%P /T /F
-    )
-
-    timeout /t 1 /nobreak >nul
-
-    for /f %%C in ('powershell.exe -NoProfile -Command "@(Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue ^| Where-Object { $_.LocalPort -in 8000,8001,8080 }).Count"') do set "OPEN_PORTS=%%C"
+for /l %%R in (1,1,15) do (
+    call :count_open_ports
     if "!OPEN_PORTS!"=="0" goto :servers_stopped
+    timeout /t 1 /nobreak >nul
 )
 
 echo One or more Rocket Server ports could not be stopped.
+echo Restart Windows and run this updater again.
 exit /b 1
 
 :servers_stopped
@@ -300,10 +297,18 @@ echo Staff:    https://rocketpubserver.co.uk/staff
 echo Logs:     %LOGS%
 exit /b 0
 
+:count_open_ports
+set "OPEN_PORTS=0"
+for %%Q in (8000 8001 8080) do (
+    powershell.exe -NoProfile -Command "if (Get-NetTCPConnection -State Listen -LocalPort %%Q -ErrorAction SilentlyContinue) { exit 0 } else { exit 1 }" >nul 2>&1
+    if not errorlevel 1 set /a OPEN_PORTS+=1
+)
+exit /b 0
+
 :servers_running
+call :count_open_ports
 set "SERVERS_RUNNING=0"
-for /f %%C in ('powershell.exe -NoProfile -Command "@(Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue ^| Where-Object { $_.LocalPort -in 8000,8001,8080 } ^| Select-Object -ExpandProperty LocalPort -Unique).Count"') do set "PORT_COUNT=%%C"
-if "!PORT_COUNT!"=="3" set "SERVERS_RUNNING=1"
+if "!OPEN_PORTS!"=="3" set "SERVERS_RUNNING=1"
 exit /b 0
 
 :stage
