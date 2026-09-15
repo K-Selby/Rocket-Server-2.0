@@ -1,7 +1,7 @@
 # Rocket Booking Portal
 
-The internal Booking Portal and public Customer Portal run together from one
-Flask process. Staff authentication is supplied by the Spring Staff Portal API.
+The internal Booking Portal runs from Flask. Staff authentication is supplied
+by the Rocket API.
 The application uses the shared SQLite database at
 data/rocket_integration.db.
 
@@ -14,14 +14,10 @@ From this folder on macOS:
     python -m pip install -r requirements.txt
     python run.py
 
-On Windows, use the setup-windows.ps1 and start-windows.ps1 scripts in the
-project root.
+On Windows, use `Rocket-Server-Update.bat` in the project root.
 
-The Flask server provides:
-
-- Customer Portal at http://localhost:8000
-- Booking Portal at http://localhost:8000/booking/dashboard
-- shared images and menus under http://localhost:8000/assets
+The Flask server provides the Booking Portal internally on port 8001. The
+Rocket Portal exposes it at http://localhost:8000/booking.
 
 Protected Booking Portal pages require a valid Staff Portal session. Start the
 Spring backend on port 8080, Flask internally on port 8001, and the Staff
