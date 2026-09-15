@@ -20,7 +20,6 @@ set "FAILED_STAGE=Unknown stage"
 if not exist "%PROJECT%" (
     echo Rocket Server was not found at:
     echo %PROJECT%
-    pause
     exit /b 1
 )
 
@@ -269,9 +268,9 @@ set "ROCKET_FLASK_PORT=8001"
 set "ROCKET_STAFF_FRONTEND_URL=https://rocketpubserver.co.uk/staff"
 set "MICROSOFT_REDIRECT_URI=https://rocketpubserver.co.uk/api/email/microsoft/callback"
 
-start "" /b /D "%BOOKING%" "%BOOKING%\.venv\Scripts\python.exe" run.py 1>>"%LOGS%\flask.log" 2>>"%LOGS%\flask-error.log"
-start "" /b /D "%BACKEND%" java.exe -jar "%SPRING_JAR%" 1>>"%LOGS%\spring.log" 2>>"%LOGS%\spring-error.log"
-start "" /b /D "%FRONTEND%" cmd.exe /c npm.cmd run start 1>>"%LOGS%\frontend.log" 2>>"%LOGS%\frontend-error.log"
+powershell.exe -NoProfile -Command "Start-Process -FilePath '%BOOKING%\.venv\Scripts\python.exe' -ArgumentList 'run.py' -WorkingDirectory '%BOOKING%' -WindowStyle Hidden -RedirectStandardOutput '%LOGS%\flask.log' -RedirectStandardError '%LOGS%\flask-error.log'"
+powershell.exe -NoProfile -Command "Start-Process -FilePath 'java.exe' -ArgumentList '-jar','%SPRING_JAR%' -WorkingDirectory '%BACKEND%' -WindowStyle Hidden -RedirectStandardOutput '%LOGS%\spring.log' -RedirectStandardError '%LOGS%\spring-error.log'"
+powershell.exe -NoProfile -Command "Start-Process -FilePath 'cmd.exe' -ArgumentList '/c','npm.cmd run start' -WorkingDirectory '%FRONTEND%' -WindowStyle Hidden -RedirectStandardOutput '%LOGS%\frontend.log' -RedirectStandardError '%LOGS%\frontend-error.log'"
 
 for /l %%W in (1,1,30) do (
     call :servers_running
@@ -321,7 +320,6 @@ echo.
 echo Rocket Server update completed successfully.
 del /q "%CHANGES%" >nul 2>&1
 del /q "%TEMP%\Rocket-Local-Changes.txt" >nul 2>&1
-pause
 exit /b 0
 
 :fail
@@ -329,5 +327,4 @@ echo.
 echo UPDATE FAILED: %FAILED_STAGE%
 del /q "%CHANGES%" >nul 2>&1
 del /q "%TEMP%\Rocket-Local-Changes.txt" >nul 2>&1
-pause
 exit /b 1
