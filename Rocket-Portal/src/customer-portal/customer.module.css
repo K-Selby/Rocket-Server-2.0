@@ -1,0 +1,604 @@
+.shell {
+  --gold: #d6b85a;
+  --gold-soft: #e7d59a;
+  --green: #073d28;
+  min-height: 100vh;
+  background:
+    linear-gradient(rgba(3, 48, 31, 0.22), rgba(3, 57, 36, 0.3)),
+    url("/assets/images/customer-green-wallpaper.png") center / cover no-repeat fixed;
+}
+
+.sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 100;
+  width: 15rem;
+  padding: 1.15rem 0.9rem;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent 38%), var(--green);
+  border-right: 1px solid rgba(231, 213, 154, 0.13);
+  box-shadow: 8px 0 28px rgba(1, 26, 16, 0.16);
+}
+
+.brand {
+  display: grid;
+  justify-items: center;
+  gap: 0.45rem;
+  padding: 0.15rem 0.4rem 1.4rem;
+}
+
+.brand img {
+  width: 10.5rem;
+  height: 8.4rem;
+  object-fit: contain;
+}
+
+.brand h2 {
+  width: 100%;
+  margin: 0;
+  color: var(--gold);
+  font-size: 1.35rem;
+  text-align: left;
+}
+
+.links {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.links a {
+  min-height: 2.75rem;
+  padding: 0.65rem 0.7rem;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  border-radius: 0.55rem;
+  color: var(--gold);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.links a:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.links a.active {
+  background: #c5dfbd;
+  color: #123f2a;
+}
+
+.icon {
+  width: 1.25rem;
+  flex: 0 0 1.25rem;
+  text-align: center;
+  font-weight: 800;
+}
+
+.menuButton,
+.backdrop {
+  display: none;
+}
+
+.main {
+  min-height: 100vh;
+  margin-left: 15rem;
+  padding: clamp(1.5rem, 4vw, 4.5rem);
+  display: flex;
+  justify-content: center;
+}
+
+.contentPanel {
+  width: min(100%, 92rem);
+  align-self: flex-start;
+  padding: clamp(1rem, 2.25vw, 2.25rem);
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: 1.5rem;
+  background: rgba(247, 250, 247, 0.94);
+  box-shadow: 0 24px 64px rgba(0, 24, 14, 0.34);
+  backdrop-filter: blur(12px);
+}
+
+.hero {
+  width: 100%;
+  min-height: clamp(17rem, 30vw, 28rem);
+  padding: clamp(1.5rem, 4vw, 4rem);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(1.5rem, 4vw, 4rem);
+  border-radius: 1.25rem;
+  background:
+    radial-gradient(circle at 12% 30%, rgba(214, 184, 90, 0.12), transparent 34%),
+    linear-gradient(135deg, #0d4932, #073d28);
+  color: white;
+  box-shadow: 0 20px 45px rgba(6, 58, 38, 0.18);
+}
+
+.heroLogo {
+  width: clamp(9rem, 17vw, 15rem);
+  height: clamp(9rem, 17vw, 15rem);
+  flex: 0 0 auto;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.2));
+}
+
+.heroCopy {
+  max-width: 46rem;
+}
+
+.hero h1 {
+  margin: 0 0 0.8rem;
+  font-size: clamp(2.3rem, 4.5vw, 5.2rem);
+  line-height: 0.96;
+}
+
+.hero p {
+  margin: 0;
+  color: #dce9da;
+  font-size: 1.1rem;
+}
+
+.cards {
+  width: 100%;
+  margin-top: 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.card {
+  min-height: 8rem;
+  padding: 1.35rem;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 1rem;
+  border: 1px solid #d4ded5;
+  border-radius: 1rem;
+  background: white;
+  color: #193025;
+  text-decoration: none;
+  box-shadow: 0 8px 22px rgba(25, 48, 37, 0.07);
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(25, 48, 37, 0.12);
+}
+
+.cardIcon {
+  width: 3rem;
+  height: 3rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #e6f0e2;
+  color: #17472f;
+  font-size: 0.85rem;
+  font-weight: 900;
+}
+
+.card strong,
+.card small {
+  display: block;
+}
+
+.card strong {
+  font-size: 1.1rem;
+}
+
+.card small {
+  margin-top: 0.35rem;
+  color: #6a786f;
+  line-height: 1.4;
+}
+
+.arrow {
+  color: #9c7417;
+  font-size: 1.5rem;
+}
+
+.allergenHero {
+  min-height: clamp(15rem, 24vw, 23rem);
+}
+
+.allergenWarning {
+  margin: 1.5rem 0;
+  padding: 1rem 1.15rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  border: 1px solid #e2c45f;
+  border-radius: 1rem;
+  background: #fff7d6;
+  color: #534719;
+  line-height: 1.45;
+}
+
+.allergenWarning strong {
+  flex: 0 0 auto;
+}
+
+.filterPanel,
+.allergenCard,
+.statusCard,
+.errorCard {
+  border: 1px solid #d4ded5;
+  border-radius: 1rem;
+  background: white;
+  box-shadow: 0 8px 22px rgba(25, 48, 37, 0.07);
+}
+
+.filterPanel {
+  padding: 1.35rem;
+}
+
+.searchFields {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(12rem, 1fr);
+  gap: 1rem;
+}
+
+.searchFields label {
+  display: grid;
+  gap: 0.45rem;
+  font-weight: 700;
+}
+
+.searchFields input,
+.searchFields select {
+  width: 100%;
+  min-height: 2.8rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #cbd7cd;
+  border-radius: 0.65rem;
+  background: white;
+  color: #193025;
+  font: inherit;
+}
+
+.filterHeading {
+  margin-top: 1.15rem;
+  display: flex;
+  gap: 0.75rem;
+  align-items: baseline;
+}
+
+.filterHeading span {
+  color: #6a786f;
+  font-size: 0.9rem;
+}
+
+.filterGrid {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.filterToggle {
+  padding: 0.55rem 0.7rem;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid #d4ded5;
+  border-radius: 999px;
+  background: #fbfdfb;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.filterActions {
+  margin-top: 1rem;
+  display: flex;
+  gap: 0.65rem;
+}
+
+.filterActions button {
+  padding: 0.7rem 1rem;
+  border: 0;
+  border-radius: 0.55rem;
+  background: #4d755b;
+  color: white;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.filterActions .secondaryButton {
+  background: #68736e;
+}
+
+.allergenKey {
+  margin: 1rem 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.allergenKey span,
+.allergenBadge {
+  padding: 0.35rem 0.6rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.allergenFree {
+  border: 1px solid #acd0ac;
+  background: #e3f1df;
+  color: #286038;
+}
+
+.allergenMay {
+  border: 1px solid #e5cb70;
+  background: #fff2bf;
+  color: #725c12;
+}
+
+.allergenContains {
+  border: 1px solid #d8a7a7;
+  background: #f7dfdf;
+  color: #8a2929;
+}
+
+.canMakeFree {
+  border: 1px solid #9fc0d5;
+  background: #dcebf7;
+  color: #2d5975;
+}
+
+.allergenGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.allergenCard {
+  padding: 1.25rem;
+  min-width: 0;
+}
+
+.allergenCard h2 {
+  margin: 0.35rem 0 0.9rem;
+  font-size: 1.35rem;
+}
+
+.category {
+  color: #728078;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.badgeGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.vegetarianRow {
+  margin-top: 0.9rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid #e3e9e4;
+}
+
+.vegetarianPill {
+  padding: 0.32rem 0.55rem;
+  border-radius: 999px;
+  background: #e3f1df;
+  color: #286038;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.adaptable {
+  background: #edf1df;
+  color: #5e6524;
+}
+
+.muted {
+  color: #77827b;
+  font-size: 0.85rem;
+}
+
+.preparationNote,
+.sideBox {
+  margin-top: 0.85rem;
+  padding: 0.75rem;
+  border-radius: 0.65rem;
+  font-size: 0.82rem;
+}
+
+.preparationNote {
+  display: grid;
+  gap: 0.25rem;
+  background: #edf5fb;
+  color: #315a72;
+}
+
+.sideBox {
+  background: #f1f6ef;
+  color: #31523d;
+}
+
+.sideBox p {
+  margin-bottom: 0;
+}
+
+.sideList {
+  margin-top: 0.55rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.sideList span {
+  padding: 0.3rem 0.5rem;
+  border-radius: 999px;
+  background: white;
+  border: 1px solid #cfdcce;
+}
+
+.ingredients {
+  margin-top: 0.85rem;
+  color: #31523d;
+}
+
+.ingredients summary {
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.ingredients p {
+  margin: 0.65rem 0 0;
+  color: #5f6f65;
+  line-height: 1.5;
+}
+
+.statusCard,
+.errorCard {
+  grid-column: 1 / -1;
+  padding: 1.25rem;
+}
+
+.errorCard {
+  border-color: #dfb0b0;
+  background: #fff1f1;
+  color: #8a2929;
+}
+
+@media (max-width: 1100px) {
+  .allergenGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .sidebar {
+    width: 4.25rem;
+    padding: 0.75rem 0.55rem;
+    transition: width 180ms ease;
+  }
+
+  .sidebarOpen {
+    width: min(17rem, 82vw);
+  }
+
+  .menuButton {
+    width: 2.75rem;
+    height: 2.75rem;
+    margin: 0 auto 1rem;
+    display: grid;
+    place-content: center;
+    gap: 0.25rem;
+    border: 1px solid rgba(231, 213, 154, 0.35);
+    border-radius: 0.55rem;
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .menuButton span {
+    width: 1.2rem;
+    height: 2px;
+    background: var(--gold);
+  }
+
+  .brand img {
+    width: 2.8rem;
+    height: 3.5rem;
+  }
+
+  .brand h2,
+  .linkText {
+    display: none;
+  }
+
+  .sidebarOpen .brand img {
+    width: 9rem;
+    height: 6.5rem;
+  }
+
+  .sidebarOpen .brand h2,
+  .sidebarOpen .linkText {
+    display: block;
+  }
+
+  .links a {
+    justify-content: center;
+  }
+
+  .sidebarOpen .links a {
+    justify-content: flex-start;
+  }
+
+  .backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    display: block;
+    border: 0;
+    background: rgba(0, 20, 12, 0.45);
+  }
+
+  .main {
+    margin-left: 4.25rem;
+    padding: 0.75rem;
+  }
+
+  .contentPanel {
+    padding: 0.75rem;
+    border-radius: 1.1rem;
+  }
+
+  .hero {
+    min-height: 0;
+    padding: 1.6rem 1.15rem 2rem;
+    flex-direction: column;
+    gap: 0.5rem;
+    text-align: center;
+  }
+
+  .heroLogo {
+    width: 8.5rem;
+    height: 8.5rem;
+  }
+
+  .cards {
+    grid-template-columns: 1fr;
+  }
+
+  .allergenWarning {
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .searchFields,
+  .allergenGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .filterHeading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .filterGrid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .filterToggle {
+    border-radius: 0.7rem;
+  }
+
+  .filterActions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+}

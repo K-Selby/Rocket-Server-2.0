@@ -2,9 +2,9 @@
 
 The project runs as three local processes behind one browser address:
 
-- Customer and Booking portals (one Flask server): `http://localhost:8001`
-- Staff Portal frontend and local gateway (Next.js): `http://localhost:8000`
-- Staff Portal API and authentication (Spring): `http://localhost:8080`
+- Booking Portal (Flask): `http://localhost:8001`
+- Customer and Staff Portal frontend, shared assets, and local gateway (Next.js): `http://localhost:8000`
+- Customer and Staff Portal API and authentication (Spring): `http://localhost:8080`
 
 Use these browser addresses:
 
@@ -14,8 +14,8 @@ Use these browser addresses:
 
 The source folders are:
 
-- `Rocket-Staff-Portal`
-- `Rocket-Customer-Portal`
+- `Rocket-Portal` for the single Next.js application, internally separated into `(customer-portal)` and `(staff-portal)`
+- `Rocket-API` for the shared Spring API
 - `Rocket-Booking-Portal`
 - `data` for the shared `rocket_integration.db`
 
@@ -27,7 +27,7 @@ Use `localhost` for all three addresses. The Booking Portal checks the Spring
 Open a Terminal in:
 
 ```text
-Rocket-Staff-Portal/staff-portal-backend
+Rocket-API
 ```
 
 Run:
@@ -36,12 +36,12 @@ Run:
 ./mvnw spring-boot:run
 ```
 
-## 2. Start the Staff Portal
+## 2. Start the Customer and Staff Portals
 
 Open another Terminal in:
 
 ```text
-Rocket-Staff-Portal/staff-portal-frontend
+Rocket-Portal
 ```
 
 Run:
@@ -68,7 +68,8 @@ python -m pip install -r requirements.txt
 python3 run.py
 ```
 
-The public Customer Portal is available at `http://localhost:8000`. Open
+The Customer Portal is provided entirely by Next.js and Spring. Flask is only
+required by the Booking Portal. Open
 `http://localhost:8000/staff/login`, sign in, and use the Booking Portal link to open
 `http://localhost:8000/booking/dashboard`.
 Opening a protected Flask page without a valid Spring session redirects to the

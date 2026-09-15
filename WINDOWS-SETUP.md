@@ -14,8 +14,9 @@ Run the one-time setup:
 ```
 
 The setup installs Git, Python 3.12, Node.js LTS, npm, and Java 21 when they are
-missing. It then installs project dependencies, builds the Staff Portal, starts
-Flask, Spring, and Next.js in the background, and registers a Windows task that
+missing. It then installs project dependencies, builds the single Next.js
+application in `Rocket-Portal`, starts the Booking Portal's Flask service,
+Spring, and Next.js in the background, and registers a Windows task that
 starts Rocket Server automatically when you sign in.
 
 For normal updates, run:
@@ -36,6 +37,7 @@ repository, and rebuilds only the parts that changed. Python and Node packages
 are reinstalled only when their dependency files change. Output is stored under
 `runtime\logs`.
 
-The public Cloudflare tunnel can continue pointing at `http://localhost:8000`.
+The Customer Portal uses Next.js and Spring without Flask. The Booking Portal
+continues to use Flask. The public Cloudflare tunnel can continue pointing at `http://localhost:8000`.
 The browser routes are `/` and `/customer` for customers, `/booking` for the
 Booking Portal, and `/staff` for the Staff Portal.

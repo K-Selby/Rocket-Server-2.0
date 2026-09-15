@@ -19,7 +19,7 @@
             if it keeps happening, give the administrator this reference:
         </p>
         <code class="system-error-reference">{{ error_reference }}</code>
-        <a class="button" href="{{ url_for('main.dashboard') if current_user else url_for('main.customer_home') }}">
+        <a class="button" href="{{ url_for('main.dashboard') if current_user else '/' }}">
             Return to Rocket Pub Server
         </a>
     </section>

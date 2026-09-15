@@ -8,8 +8,8 @@ $ErrorActionPreference = "Stop"
 
 $ProjectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $BookingRoot = Join-Path $ProjectRoot "Rocket-Booking-Portal"
-$FrontendRoot = Join-Path $ProjectRoot "Rocket-Staff-Portal\staff-portal-frontend"
-$BackendRoot = Join-Path $ProjectRoot "Rocket-Staff-Portal\staff-portal-backend"
+$FrontendRoot = Join-Path $ProjectRoot "Rocket-Portal"
+$BackendRoot = Join-Path $ProjectRoot "Rocket-API"
 $RuntimeRoot = Join-Path $ProjectRoot "runtime"
 $LogRoot = Join-Path $RuntimeRoot "logs"
 $PidRoot = Join-Path $RuntimeRoot "pids"
@@ -150,7 +150,7 @@ function Start-RocketServers {
         throw "The Spring application is missing. Run setup-windows.ps1 again."
     }
     if (-not (Test-Path (Join-Path $FrontendRoot ".next\BUILD_ID"))) {
-        throw "The Staff Portal build is missing. Run setup-windows.ps1 again."
+        throw "The web portal build is missing. Run setup-windows.ps1 again."
     }
 
     $env:ROCKET_FLASK_PORT = "8001"
@@ -232,14 +232,14 @@ try {
         ($changedFiles -contains "Rocket-Booking-Portal/requirements.txt") -or
         -not (Test-Path $venvPython)
     $frontendChanged = $Rebuild -or
-        @($changedFiles | Where-Object { $_ -like "Rocket-Staff-Portal/staff-portal-frontend/*" }).Count -gt 0 -or
+        @($changedFiles | Where-Object { $_ -like "Rocket-Portal/*" }).Count -gt 0 -or
         -not (Test-Path $frontendBuild)
     $frontendDependenciesChanged = $Rebuild -or
-        ($changedFiles -contains "Rocket-Staff-Portal/staff-portal-frontend/package.json") -or
-        ($changedFiles -contains "Rocket-Staff-Portal/staff-portal-frontend/package-lock.json") -or
+        ($changedFiles -contains "Rocket-Portal/package.json") -or
+        ($changedFiles -contains "Rocket-Portal/package-lock.json") -or
         -not (Test-Path $nodeModules)
     $backendChanged = $Rebuild -or
-        @($changedFiles | Where-Object { $_ -like "Rocket-Staff-Portal/staff-portal-backend/*" }).Count -gt 0 -or
+        @($changedFiles | Where-Object { $_ -like "Rocket-API/*" }).Count -gt 0 -or
         -not $jar
 
     if ($pythonRequirementsChanged) { Install-PythonDependencies }

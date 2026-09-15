@@ -15,7 +15,7 @@
         <span class="system-error-code">404</span>
         <h1>Page not found</h1>
         <p>The page you tried to open does not exist.</p>
-        <a class="button" href="{{ url_for('main.dashboard') if current_user else url_for('main.customer_home') }}">
+    <a class="button" href="{{ url_for('main.dashboard') if current_user else '/' }}">
             Go back
         </a>
     </section>

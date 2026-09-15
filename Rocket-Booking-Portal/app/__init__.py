@@ -2,7 +2,6 @@ from datetime import datetime, timedelta
 from flask import Flask, redirect, render_template, send_from_directory
 import logging
 import os
-import sys
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from dotenv import load_dotenv
@@ -125,15 +124,6 @@ def create_app():
     from app.services.migration_service import run_pending_migrations
     from app.services.security_service import apply_security_headers
 
-    customer_project = project_root / "Rocket-Customer-Portal"
-    customer_project_text = str(customer_project)
-
-    if customer_project_text not in sys.path:
-        sys.path.insert(0, customer_project_text)
-
-    from rocket_customer import customer
-
-    app.register_blueprint(customer)
     app.register_blueprint(main, url_prefix="/booking")
 
     @app.get("/assets/<path:filename>")
