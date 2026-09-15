@@ -1578,6 +1578,7 @@ def validate_selected_tables(
     booking_date,
     booking_time,
     exclude_booking_id=None,
+    allow_under_capacity=False,
 ):
     if not selected_tables:
         if party_size >= 10:
@@ -1589,7 +1590,7 @@ def validate_selected_tables(
 
     total_capacity = sum(table.capacity for table in selected_tables)
 
-    if total_capacity < party_size:
+    if total_capacity < party_size and not allow_under_capacity:
         return f"Selected tables only hold {total_capacity} people."
 
     if party_size >= 10:
@@ -6894,6 +6895,7 @@ def booking_form_handler(booking=None):
         is_eating_food = request.form.get("is_eating_food") == "on"
 
         selected_table_ids = request.form.getlist("table_ids", type=int)
+        manual_table_selection = bool(selected_table_ids)
 
         customer = get_or_create_customer(customer_name, customer_phone)
         customer.preferred_area_id = preferred_area_id
@@ -6938,6 +6940,7 @@ def booking_form_handler(booking=None):
             booking_date,
             booking_time,
             exclude_booking_id=exclude_id,
+            allow_under_capacity=manual_table_selection,
         )
 
         if table_error:
@@ -7057,6 +7060,14 @@ def booking_form_handler(booking=None):
                 + " moved: "
                 + ", ".join(moved_smaller_bookings)
                 + "."
+            )
+
+        selected_capacity = sum(table.capacity for table in selected_tables)
+        if manual_table_selection and selected_capacity < party_size:
+            flash(
+                f"Warning: the manually selected tables provide "
+                f"{selected_capacity} seats for {party_size} people.",
+                "warning",
             )
 
         flash(message, "success")

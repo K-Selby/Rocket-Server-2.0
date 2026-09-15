@@ -585,6 +585,25 @@ function setupNormalTableAvailability() {
     }
 
     function syncSelectedVisuals() {
+        const selectedCards = cards.filter(card => {
+            const checkbox = card.querySelector('input[type="checkbox"]');
+            return Boolean(checkbox?.checked);
+        });
+        const selectedSeats = selectedCards.reduce(
+            (total, card) => total + Number(card.dataset.capacity || 0),
+            0
+        );
+        const party = Number(partyInput.value || 0);
+        const underCapacity = selectedCards.length > 0 && party > selectedSeats;
+
+        if (capacityWarning) {
+            capacityWarning.hidden = !underCapacity;
+            capacityWarning.textContent = underCapacity
+                ? `Warning: these tables provide ${selectedSeats} seats for ${party} people. ` +
+                  "Staff can still save this manual selection."
+                : "";
+        }
+
         cards.forEach(card => {
             const checkbox = card.querySelector('input[type="checkbox"]');
             const selected = Boolean(checkbox?.checked);
@@ -598,27 +617,20 @@ function setupNormalTableAvailability() {
         });
 
         if (largeSeatCount && Number(partyInput.value || 0) >= 10) {
-            const selectedCards = cards
-                .filter(card => {
-                    const checkbox = card.querySelector('input[type="checkbox"]');
-                    return Boolean(checkbox?.checked);
-                })
+            const sortedSelectedCards = selectedCards
                 .sort((a, b) =>
                     naturalTableNumber(a.dataset.number) -
                     naturalTableNumber(b.dataset.number)
                 );
 
-            const seats = selectedCards.reduce(
-                (total, card) => total + Number(card.dataset.capacity || 0),
-                0
-            );
-            const party = Number(partyInput.value || 0);
-            const tableNames = selectedCards.map(card => `T${card.dataset.number}`);
+            const tableNames = sortedSelectedCards.map(card => `T${card.dataset.number}`);
 
             largeSeatCount.textContent =
-                `${seats} seats selected for ${party} people` +
-                (seats >= party ? " — enough seats" : ` — select ${party - seats} more`);
-            largeSeatCount.classList.toggle("enough", seats >= party);
+                `${selectedSeats} seats selected for ${party} people` +
+                (selectedSeats >= party
+                    ? " — enough seats"
+                    : " — warning: fewer seats than people, but you can still save");
+            largeSeatCount.classList.toggle("enough", selectedSeats >= party);
 
             if (largeSelectedTables) {
                 largeSelectedTables.textContent = tableNames.length
