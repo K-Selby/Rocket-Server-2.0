@@ -13,7 +13,6 @@ set "FRONTEND=%PROJECT%\Rocket-Portal"
 set "BACKEND=%PROJECT%\Rocket-API"
 set "RUNTIME=%PROJECT%\runtime"
 set "LOGS=%RUNTIME%\logs"
-set "LOG=%USERPROFILE%\Desktop\Rocket-Server-Update.log"
 set "REMOTE_FILE=%TEMP%\Rocket-Server-Update-Remote.bat"
 set "CHANGES=%TEMP%\Rocket-Server-Changes.txt"
 set "FAILED_STAGE=Unknown stage"
@@ -27,25 +26,23 @@ if not exist "%PROJECT%" (
 
 if not exist "%LOGS%" mkdir "%LOGS%"
 
-> "%LOG%" echo Rocket Server update started %date% %time%
-
 call :stage "Checking required programs"
-where git.exe >> "%LOG%" 2>&1
+where git.exe
 if errorlevel 1 (
     set "FAILED_STAGE=Git is not installed or is not available in PATH"
     goto :fail
 )
-where python.exe >> "%LOG%" 2>&1
+where python.exe
 if errorlevel 1 (
     set "FAILED_STAGE=Python is not installed or is not available in PATH"
     goto :fail
 )
-where npm.cmd >> "%LOG%" 2>&1
+where npm.cmd
 if errorlevel 1 (
     set "FAILED_STAGE=Node.js and npm are not installed or are not available in PATH"
     goto :fail
 )
-where java.exe >> "%LOG%" 2>&1
+where java.exe
 if errorlevel 1 (
     set "FAILED_STAGE=Java is not installed or is not available in PATH"
     goto :fail
@@ -55,7 +52,7 @@ cd /d "%PROJECT%"
 
 call :stage "Checking Git for updates"
 set "FAILED_STAGE=Git fetch"
-git fetch origin >> "%LOG%" 2>&1
+git fetch origin
 if errorlevel 1 goto :fail
 
 for /f "delims=" %%B in ('git branch --show-current') do set "BRANCH=%%B"
@@ -84,19 +81,23 @@ if "%LOCAL_COMMIT%"=="%REMOTE_COMMIT%" goto :no_git_update
 call :stage "A new Git update was found"
 
 set "FAILED_STAGE=Checking for an updater update"
-git show "%REMOTE%:Rocket-Server-Update.bat" > "%REMOTE_FILE%" 2>> "%LOG%"
+git show "%REMOTE%:Rocket-Server-Update.bat" > "%REMOTE_FILE%" 2>nul
 if errorlevel 1 goto :fail
 
 fc /b "%~f0" "%REMOTE_FILE%" >nul 2>&1
 if errorlevel 1 (
-    copy /y "%REMOTE_FILE%" "%~f0" >nul
-    del /q "%REMOTE_FILE%" >nul 2>&1
+    set "REPLACE_HELPER=%TEMP%\Rocket-Replace-Updater-%RANDOM%.cmd"
+    > "!REPLACE_HELPER!" echo @echo off
+    >> "!REPLACE_HELPER!" echo timeout /t 4 /nobreak ^>nul
+    >> "!REPLACE_HELPER!" echo copy /y "%REMOTE_FILE%" "%~f0" ^>nul
+    >> "!REPLACE_HELPER!" echo del /q "%REMOTE_FILE%" ^>nul 2^>^&1
+    >> "!REPLACE_HELPER!" echo del /q "%%~f0" ^>nul 2^>^&1
+    start "" /min cmd.exe /c "!REPLACE_HELPER!"
     echo.
-    echo The updater itself has been updated.
-    echo Close this window and run the batch file again.
-    echo The remaining project files have not been changed yet.
-    >> "%LOG%" echo The updater was updated. Relaunch is required.
-    pause
+    echo A new updater has been downloaded.
+    echo This window will now close safely.
+    echo Wait 10 seconds and then run the batch file again.
+    timeout /t 3 /nobreak >nul
     exit /b 20
 )
 
@@ -146,7 +147,7 @@ if errorlevel 1 goto :fail
 if not "%LOCAL_COMMIT%"=="%REMOTE_COMMIT%" (
     call :stage "Downloading and applying the Git update"
     set "FAILED_STAGE=Applying the Git update"
-    git merge --ff-only "%REMOTE%" >> "%LOG%" 2>&1
+    git merge --ff-only "%REMOTE%"
     if errorlevel 1 goto :fail
     call :stage "Git update completed"
 )
@@ -162,11 +163,11 @@ if "!PYTHON_CHANGED!"=="1" (
     set "FAILED_STAGE=Installing Python dependencies"
 
     if not exist "%BOOKING%\.venv\Scripts\python.exe" (
-        python.exe -m venv "%BOOKING%\.venv" >> "%LOG%" 2>&1
+        python.exe -m venv "%BOOKING%\.venv"
         if errorlevel 1 goto :fail
     )
 
-    "%BOOKING%\.venv\Scripts\python.exe" -m pip install --disable-pip-version-check -r "%BOOKING%\requirements.txt" >> "%LOG%" 2>&1
+    "%BOOKING%\.venv\Scripts\python.exe" -m pip install --disable-pip-version-check -r "%BOOKING%\requirements.txt"
     if errorlevel 1 goto :fail
     call :stage "Python dependencies are ready"
 ) else (
@@ -177,7 +178,7 @@ if "!FRONTEND_PACKAGES_CHANGED!"=="1" (
     call :stage "Installing frontend dependencies"
     set "FAILED_STAGE=Installing frontend dependencies"
     cd /d "%FRONTEND%"
-    call npm.cmd ci >> "%LOG%" 2>&1
+    call npm.cmd ci
     if errorlevel 1 goto :fail
     call :stage "Frontend dependencies are ready"
 ) else (
@@ -188,13 +189,13 @@ if "!FRONTEND_CHANGED!"=="1" (
     call :stage "Checking the frontend code"
     set "FAILED_STAGE=Checking the frontend code"
     cd /d "%FRONTEND%"
-    call npm.cmd run lint >> "%LOG%" 2>&1
+    call npm.cmd run lint
     if errorlevel 1 goto :fail
     call :stage "Frontend code check completed"
 
     call :stage "Building the Rocket Portal"
     set "FAILED_STAGE=Building the Rocket Portal"
-    call npm.cmd run build >> "%LOG%" 2>&1
+    call npm.cmd run build
     if errorlevel 1 goto :fail
     call :stage "Rocket Portal build completed"
 ) else (
@@ -205,7 +206,7 @@ if "!BACKEND_CHANGED!"=="1" (
     call :stage "Building the Rocket API"
     set "FAILED_STAGE=Building the Rocket API"
     cd /d "%BACKEND%"
-    call mvnw.cmd package -DskipTests >> "%LOG%" 2>&1
+    call mvnw.cmd package -DskipTests
     if errorlevel 1 goto :fail
     call :stage "Rocket API build completed"
 ) else (
@@ -223,11 +224,11 @@ set "FAILED_STAGE=Stopping Rocket Server processes"
 
 for /l %%R in (1,1,10) do (
     for /f %%P in ('powershell.exe -NoProfile -Command "Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue ^| Where-Object { $_.LocalPort -in 8000,8001,8080 } ^| Select-Object -ExpandProperty OwningProcess -Unique"') do (
-        taskkill.exe /PID %%P /T /F >> "%LOG%" 2>&1
+        taskkill.exe /PID %%P /T /F
     )
 
     for /f %%P in ('powershell.exe -NoProfile -Command "Get-CimInstance Win32_Process -ErrorAction SilentlyContinue ^| Where-Object { $_.Name -match '^(node^|java^|python^|pythonw^|npm^|cmd)\.exe$' -and $_.CommandLine -and $_.CommandLine -like '*%PROJECT%*' } ^| Select-Object -ExpandProperty ProcessId"') do (
-        if not "%%P"=="%PROCESS_ID%" taskkill.exe /PID %%P /T /F >> "%LOG%" 2>&1
+        if not "%%P"=="%PROCESS_ID%" taskkill.exe /PID %%P /T /F
     )
 
     timeout /t 1 /nobreak >nul
@@ -308,11 +309,9 @@ exit /b 0
 :stage
 echo.
 echo [%time:~0,8%] %~1
->> "%LOG%" echo [%time:~0,8%] %~1
 exit /b 0
 
 :success
->> "%LOG%" echo Rocket Server update completed successfully.
 echo.
 echo Rocket Server update completed successfully.
 del /q "%CHANGES%" >nul 2>&1
@@ -323,9 +322,6 @@ exit /b 0
 :fail
 echo.
 echo UPDATE FAILED: %FAILED_STAGE%
-echo The full output is saved at:
-echo %LOG%
->> "%LOG%" echo UPDATE FAILED: %FAILED_STAGE%
 del /q "%CHANGES%" >nul 2>&1
 del /q "%TEMP%\Rocket-Local-Changes.txt" >nul 2>&1
 pause
