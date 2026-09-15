@@ -17,6 +17,11 @@ $RocketPorts = 8000, 8001, 8080
 
 New-Item -ItemType Directory -Force $LogRoot, $PidRoot | Out-Null
 
+function Write-Stage {
+    param([string]$Message)
+    Write-Host "[$(Get-Date -Format 'HH:mm:ss')] $Message"
+}
+
 function Invoke-Checked {
     param([string]$Description, [scriptblock]$Command)
     & $Command
@@ -36,6 +41,8 @@ function Test-RocketServersRunning {
 }
 
 function Stop-RocketServers {
+    Write-Stage "Stopping Rocket Server processes..."
+
     $savedProcessIds = @(Get-ChildItem $PidRoot -Filter "*.pid" -ErrorAction SilentlyContinue |
         ForEach-Object { Get-Content $_.FullName -ErrorAction SilentlyContinue } |
         Where-Object { $_ } |
@@ -47,11 +54,31 @@ function Stop-RocketServers {
         $processIds = @($savedProcessIds + $listeningProcessIds | Select-Object -Unique)
 
         foreach ($processId in $processIds) {
-            Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue
+            # taskkill /T closes the complete npm, Java or Python process tree.
+            # Stopping only the listening child can leave npm or Next holding
+            # files such as next-swc.win32-x64-msvc.node open.
+            & taskkill.exe /PID $processId /T /F *> $null
+            if ($LASTEXITCODE -ne 0) {
+                Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue
+            }
+        }
+
+        # Also remove project processes that have stopped listening but still
+        # hold build files. Limit this to commands launched from this project.
+        $projectProcesses = @(Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
+            Where-Object {
+                $_.ProcessId -ne $PID -and
+                $_.Name -match '^(node|java|python|pythonw|npm|cmd)\.exe$' -and
+                $_.CommandLine -and
+                $_.CommandLine -like "*$ProjectRoot*"
+            })
+
+        foreach ($process in $projectProcesses) {
+            & taskkill.exe /PID $process.ProcessId /T /F *> $null
         }
 
         Start-Sleep -Seconds 1
-        if (@(Get-RocketListeners).Count -eq 0) {
+        if (@(Get-RocketListeners).Count -eq 0 -and $projectProcesses.Count -eq 0) {
             break
         }
     }
@@ -67,6 +94,8 @@ function Stop-RocketServers {
         }
         throw "Rocket Server could not release $($details -join ', '). Restart Windows, then run the update again."
     }
+
+    Write-Stage "Rocket Server processes stopped."
 }
 
 function Start-HiddenProcess {
@@ -84,6 +113,7 @@ function Start-HiddenProcess {
 }
 
 function Install-PythonDependencies {
+    Write-Stage "Checking Python dependencies..."
     $python = (Get-Command python.exe -ErrorAction Stop).Source
     $venvPython = Join-Path $BookingRoot ".venv\Scripts\python.exe"
     if (-not (Test-Path $venvPython)) {
@@ -94,9 +124,11 @@ function Install-PythonDependencies {
     Invoke-Checked "Python dependency installation" {
         & $venvPython -m pip install --disable-pip-version-check -r (Join-Path $BookingRoot "requirements.txt")
     }
+    Write-Stage "Python dependencies are ready."
 }
 
 function Install-FrontendDependencies {
+    Write-Stage "Installing frontend dependencies..."
     $npm = (Get-Command npm.cmd -ErrorAction Stop).Source
     Push-Location $FrontendRoot
     try {
@@ -105,21 +137,27 @@ function Install-FrontendDependencies {
     finally {
         Pop-Location
     }
+    Write-Stage "Frontend dependencies are ready."
 }
 
 function Build-Frontend {
+    Write-Stage "Checking frontend code..."
     $npm = (Get-Command npm.cmd -ErrorAction Stop).Source
     Push-Location $FrontendRoot
     try {
         Invoke-Checked "Frontend lint" { & $npm run lint }
+        Write-Stage "Frontend code check completed."
+        Write-Stage "Building the Rocket Portal..."
         Invoke-Checked "Frontend build" { & $npm run build }
     }
     finally {
         Pop-Location
     }
+    Write-Stage "Rocket Portal build completed."
 }
 
 function Build-Backend {
+    Write-Stage "Building the Rocket API..."
     Push-Location $BackendRoot
     try {
         Invoke-Checked "Spring build" {
@@ -129,6 +167,7 @@ function Build-Backend {
     finally {
         Pop-Location
     }
+    Write-Stage "Rocket API build completed."
 }
 
 function Get-SpringJar {
@@ -138,6 +177,7 @@ function Get-SpringJar {
 }
 
 function Start-RocketServers {
+    Write-Stage "Starting Rocket Server in the background..."
     $venvPython = Join-Path $BookingRoot ".venv\Scripts\python.exe"
     $npm = (Get-Command npm.cmd -ErrorAction Stop).Source
     $java = (Get-Command java.exe -ErrorAction Stop).Source
@@ -174,6 +214,7 @@ function Start-RocketServers {
         throw "Rocket Server did not start on port(s) $($missingPorts -join ', '). Check $LogRoot."
     }
 
+    Write-Stage "All Rocket Server services are running."
     Write-Host "Rocket Server is running in the background."
     Write-Host "Customer: https://rocketpubserver.co.uk/"
     Write-Host "Booking:  https://rocketpubserver.co.uk/booking"
@@ -183,6 +224,7 @@ function Start-RocketServers {
 
 Push-Location $ProjectRoot
 try {
+    Write-Stage "Checking Git for updates..."
     $changedFiles = @()
     $hasUpdate = $false
 
@@ -200,6 +242,10 @@ try {
         $hasUpdate = $localCommit -ne $remoteCommit
         if ($hasUpdate) {
             $changedFiles = @(& git diff --name-only $localCommit $remoteCommit)
+            Write-Stage "A new Git update was found."
+        }
+        else {
+            Write-Stage "No new Git update was found."
         }
     }
 
@@ -220,7 +266,9 @@ try {
 
     Stop-RocketServers
     if ($hasUpdate) {
+        Write-Stage "Downloading and applying the Git update..."
         Invoke-Checked "Git update" { & git merge --ff-only $remoteRef }
+        Write-Stage "Git update completed."
     }
 
     $venvPython = Join-Path $BookingRoot ".venv\Scripts\python.exe"
@@ -243,9 +291,13 @@ try {
         -not $jar
 
     if ($pythonRequirementsChanged) { Install-PythonDependencies }
+    else { Write-Stage "Python dependencies have not changed." }
     if ($frontendDependenciesChanged) { Install-FrontendDependencies }
+    else { Write-Stage "Frontend dependencies have not changed." }
     if ($frontendChanged) { Build-Frontend }
+    else { Write-Stage "Rocket Portal build is already current." }
     if ($backendChanged) { Build-Backend }
+    else { Write-Stage "Rocket API build is already current." }
 
     Start-RocketServers
 }

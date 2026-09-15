@@ -16,10 +16,9 @@ echo Updating Rocket Server...
 echo Please wait. This window will remain open when finished.
 echo.
 
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%PROJECT%\update-windows.ps1" > "%LOG%" 2>&1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& { & '%PROJECT%\update-windows.ps1' 2>&1 | Tee-Object -FilePath '%LOG%'; exit 0 }"
 set "EXIT_CODE=%errorlevel%"
 
-type "%LOG%"
 echo.
 
 if not "%EXIT_CODE%"=="0" (

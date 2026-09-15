@@ -27,7 +27,8 @@ For normal updates, run:
 
 Alternatively, copy `Rocket-Server-Update.bat` from the repository to the
 Desktop and double-click it. The batch file requests Administrator access,
-records the complete result in `Rocket-Server-Update.log` on the Desktop, and
+shows each update stage while it runs, records the complete result in
+`Rocket-Server-Update.log` on the Desktop, and
 keeps the result window open.
 
 The updater checks GitHub first. When there is no new commit and all three
