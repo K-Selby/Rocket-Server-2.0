@@ -1,6 +1,5 @@
-<# : batch portion
 @echo off
-setlocal
+setlocal EnableExtensions EnableDelayedExpansion
 
 net session >nul 2>&1
 if not "%errorlevel%"=="0" (
@@ -9,368 +8,325 @@ if not "%errorlevel%"=="0" (
 )
 
 set "PROJECT=%USERPROFILE%\Documents\Rocket-Server-2.0"
+set "BOOKING=%PROJECT%\Rocket-Booking-Portal"
+set "FRONTEND=%PROJECT%\Rocket-Portal"
+set "BACKEND=%PROJECT%\Rocket-API"
+set "RUNTIME=%PROJECT%\runtime"
+set "LOGS=%RUNTIME%\logs"
 set "LOG=%USERPROFILE%\Desktop\Rocket-Server-Update.log"
-set "ROCKET_LAUNCHER=%~f0"
+set "REMOTE_FILE=%TEMP%\Rocket-Server-Update-Remote.bat"
+set "CHANGES=%TEMP%\Rocket-Server-Changes.txt"
+set "FAILED_STAGE=Unknown stage"
+
+if not exist "%PROJECT%" (
+    echo Rocket Server was not found at:
+    echo %PROJECT%
+    pause
+    exit /b 1
+)
+
+if not exist "%LOGS%" mkdir "%LOGS%"
+
+> "%LOG%" echo Rocket Server update started %date% %time%
+
+call :stage "Checking required programs"
+where git.exe >> "%LOG%" 2>&1
+if errorlevel 1 (
+    set "FAILED_STAGE=Git is not installed or is not available in PATH"
+    goto :fail
+)
+where python.exe >> "%LOG%" 2>&1
+if errorlevel 1 (
+    set "FAILED_STAGE=Python is not installed or is not available in PATH"
+    goto :fail
+)
+where npm.cmd >> "%LOG%" 2>&1
+if errorlevel 1 (
+    set "FAILED_STAGE=Node.js and npm are not installed or are not available in PATH"
+    goto :fail
+)
+where java.exe >> "%LOG%" 2>&1
+if errorlevel 1 (
+    set "FAILED_STAGE=Java is not installed or is not available in PATH"
+    goto :fail
+)
 
 cd /d "%PROJECT%"
 
-echo Updating Rocket Server...
-echo This window will show each completed stage.
-echo.
+call :stage "Checking Git for updates"
+set "FAILED_STAGE=Git fetch"
+git fetch origin >> "%LOG%" 2>&1
+if errorlevel 1 goto :fail
 
-powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& { $code = Get-Content -Raw -LiteralPath $env:ROCKET_LAUNCHER; Invoke-Expression $code 2>&1 | Tee-Object -FilePath '%LOG%'; exit 0 }"
-set "EXIT_CODE=%errorlevel%"
+for /f "delims=" %%B in ('git branch --show-current') do set "BRANCH=%%B"
+if not defined BRANCH (
+    set "FAILED_STAGE=Reading the current Git branch"
+    goto :fail
+)
 
-echo.
-if "%EXIT_CODE%"=="20" (
-    echo The updater was updated.
+set "REMOTE=origin/%BRANCH%"
+
+for /f "delims=" %%C in ('git rev-parse HEAD') do set "LOCAL_COMMIT=%%C"
+for /f "delims=" %%C in ('git rev-parse "%REMOTE%"') do set "REMOTE_COMMIT=%%C"
+
+if not defined LOCAL_COMMIT (
+    set "FAILED_STAGE=Reading the local Git version"
+    goto :fail
+)
+
+if not defined REMOTE_COMMIT (
+    set "FAILED_STAGE=Reading the remote Git version"
+    goto :fail
+)
+
+if "%LOCAL_COMMIT%"=="%REMOTE_COMMIT%" goto :no_git_update
+
+call :stage "A new Git update was found"
+
+set "FAILED_STAGE=Checking for an updater update"
+git show "%REMOTE%:Rocket-Server-Update.bat" > "%REMOTE_FILE%" 2>> "%LOG%"
+if errorlevel 1 goto :fail
+
+fc /b "%~f0" "%REMOTE_FILE%" >nul 2>&1
+if errorlevel 1 (
+    copy /y "%REMOTE_FILE%" "%~f0" >nul
+    del /q "%REMOTE_FILE%" >nul 2>&1
+    echo.
+    echo The updater itself has been updated.
     echo Close this window and run the batch file again.
-) else if not "%EXIT_CODE%"=="0" (
-    echo The update encountered an error.
-    echo The full output is saved at:
-    echo %LOG%
-) else (
-    echo Rocket Server update completed successfully.
+    echo The remaining project files have not been changed yet.
+    >> "%LOG%" echo The updater was updated. Relaunch is required.
+    pause
+    exit /b 20
 )
 
-echo.
-pause
-exit /b %EXIT_CODE%
-#>
+del /q "%REMOTE_FILE%" >nul 2>&1
 
-param(
-    [switch]$Force,
-    [switch]$Rebuild,
-    [switch]$Startup
+git status --porcelain > "%TEMP%\Rocket-Local-Changes.txt"
+for %%A in ("%TEMP%\Rocket-Local-Changes.txt") do if %%~zA GTR 0 (
+    set "FAILED_STAGE=Local project files have changes"
+    echo Local project files have changes. The update stopped to protect them.
+    goto :fail
 )
 
-$ErrorActionPreference = "Stop"
+git diff --name-only "%LOCAL_COMMIT%" "%REMOTE_COMMIT%" > "%CHANGES%"
 
-$ProjectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
-$BookingRoot = Join-Path $ProjectRoot "Rocket-Booking-Portal"
-$FrontendRoot = Join-Path $ProjectRoot "Rocket-Portal"
-$BackendRoot = Join-Path $ProjectRoot "Rocket-API"
-$RuntimeRoot = Join-Path $ProjectRoot "runtime"
-$LogRoot = Join-Path $RuntimeRoot "logs"
-$PidRoot = Join-Path $RuntimeRoot "pids"
-$RocketPorts = 8000, 8001, 8080
+set "BOOKING_CHANGED=0"
+set "PYTHON_CHANGED=0"
+set "FRONTEND_CHANGED=0"
+set "FRONTEND_PACKAGES_CHANGED=0"
+set "BACKEND_CHANGED=0"
 
-New-Item -ItemType Directory -Force $LogRoot, $PidRoot | Out-Null
+findstr /B /C:"Rocket-Booking-Portal/" "%CHANGES%" >nul && set "BOOKING_CHANGED=1"
+findstr /X /C:"Rocket-Booking-Portal/requirements.txt" "%CHANGES%" >nul && set "PYTHON_CHANGED=1"
+findstr /B /C:"Rocket-Portal/" "%CHANGES%" >nul && set "FRONTEND_CHANGED=1"
+findstr /X /C:"Rocket-Portal/package.json" /C:"Rocket-Portal/package-lock.json" "%CHANGES%" >nul && set "FRONTEND_PACKAGES_CHANGED=1"
+findstr /B /C:"Rocket-API/" "%CHANGES%" >nul && set "BACKEND_CHANGED=1"
 
-function Write-Stage {
-    param([string]$Message)
-    Write-Host "[$(Get-Date -Format 'HH:mm:ss')] $Message"
-}
+goto :perform_update
 
-function Invoke-Checked {
-    param([string]$Description, [scriptblock]$Command)
-    & $Command
-    if ($LASTEXITCODE -ne 0) {
-        throw "$Description failed with exit code $LASTEXITCODE."
-    }
-}
+:no_git_update
+call :stage "No new Git update was found"
+call :servers_running
+if "!SERVERS_RUNNING!"=="1" (
+    call :stage "Rocket Server is already current and running"
+    goto :success
+)
 
-function Get-RocketListeners {
-    @(Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue |
-        Where-Object { $_.LocalPort -in $RocketPorts })
-}
+set "BOOKING_CHANGED=0"
+set "PYTHON_CHANGED=0"
+set "FRONTEND_CHANGED=0"
+set "FRONTEND_PACKAGES_CHANGED=0"
+set "BACKEND_CHANGED=0"
 
-function Test-RocketServersRunning {
-    $listeningPorts = @(Get-RocketListeners | Select-Object -ExpandProperty LocalPort -Unique)
-    return (@($RocketPorts | Where-Object { $_ -notin $listeningPorts }).Count -eq 0)
-}
+:perform_update
+call :stop_servers
+if errorlevel 1 goto :fail
 
-function Stop-RocketServers {
-    Write-Stage "Stopping Rocket Server processes..."
+if not "%LOCAL_COMMIT%"=="%REMOTE_COMMIT%" (
+    call :stage "Downloading and applying the Git update"
+    set "FAILED_STAGE=Applying the Git update"
+    git merge --ff-only "%REMOTE%" >> "%LOG%" 2>&1
+    if errorlevel 1 goto :fail
+    call :stage "Git update completed"
+)
 
-    $savedProcessIds = @(Get-ChildItem $PidRoot -Filter "*.pid" -ErrorAction SilentlyContinue |
-        ForEach-Object { Get-Content $_.FullName -ErrorAction SilentlyContinue } |
-        Where-Object { $_ } |
-        ForEach-Object { [int]$_ })
+if not exist "%BOOKING%\.venv\Scripts\python.exe" set "PYTHON_CHANGED=1"
+if not exist "%FRONTEND%\node_modules" set "FRONTEND_PACKAGES_CHANGED=1"
+if not exist "%FRONTEND%\.next\BUILD_ID" set "FRONTEND_CHANGED=1"
 
-    for ($attempt = 1; $attempt -le 6; $attempt++) {
-        $listeningProcessIds = @(Get-RocketListeners |
-            Select-Object -ExpandProperty OwningProcess -Unique)
-        $processIds = @($savedProcessIds + $listeningProcessIds | Select-Object -Unique)
+dir /b /a-d "%BACKEND%\target\*.jar" >nul 2>&1 || set "BACKEND_CHANGED=1"
 
-        foreach ($processId in $processIds) {
-            # taskkill /T closes the complete npm, Java or Python process tree.
-            # Stopping only the listening child can leave npm or Next holding
-            # files such as next-swc.win32-x64-msvc.node open.
-            & taskkill.exe /PID $processId /T /F *> $null
-            if ($LASTEXITCODE -ne 0) {
-                Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue
-            }
-        }
+if "!PYTHON_CHANGED!"=="1" (
+    call :stage "Installing Python dependencies"
+    set "FAILED_STAGE=Installing Python dependencies"
 
-        # Also remove project processes that have stopped listening but still
-        # hold build files. Limit this to commands launched from this project.
-        $projectProcesses = @(Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
-            Where-Object {
-                $_.ProcessId -ne $PID -and
-                $_.Name -match '^(node|java|python|pythonw|npm|cmd)\.exe$' -and
-                $_.CommandLine -and
-                $_.CommandLine -like "*$ProjectRoot*"
-            })
-
-        foreach ($process in $projectProcesses) {
-            & taskkill.exe /PID $process.ProcessId /T /F *> $null
-        }
-
-        Start-Sleep -Seconds 1
-        if (@(Get-RocketListeners).Count -eq 0 -and $projectProcesses.Count -eq 0) {
-            break
-        }
-    }
-
-    Get-ChildItem $PidRoot -Filter "*.pid" -ErrorAction SilentlyContinue |
-        Remove-Item -Force -ErrorAction SilentlyContinue
-
-    $remaining = @(Get-RocketListeners)
-    if ($remaining.Count -gt 0) {
-        $details = $remaining | ForEach-Object {
-            $process = Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue
-            "port $($_.LocalPort): $($process.ProcessName) (PID $($_.OwningProcess))"
-        }
-        throw "Rocket Server could not release $($details -join ', '). Restart Windows, then run the update again."
-    }
-
-    Write-Stage "Rocket Server processes stopped."
-}
-
-function Start-HiddenProcess {
-    param(
-        [string]$Name,
-        [string]$FilePath,
-        [string[]]$ArgumentList,
-        [string]$WorkingDirectory
+    if not exist "%BOOKING%\.venv\Scripts\python.exe" (
+        python.exe -m venv "%BOOKING%\.venv" >> "%LOG%" 2>&1
+        if errorlevel 1 goto :fail
     )
-    $process = Start-Process -FilePath $FilePath -ArgumentList $ArgumentList `
-        -WorkingDirectory $WorkingDirectory -WindowStyle Hidden `
-        -RedirectStandardOutput (Join-Path $LogRoot "$Name.log") `
-        -RedirectStandardError (Join-Path $LogRoot "$Name-error.log") -PassThru
-    Set-Content (Join-Path $PidRoot "$Name.pid") $process.Id
-}
 
-function Install-PythonDependencies {
-    Write-Stage "Checking Python dependencies..."
-    $python = (Get-Command python.exe -ErrorAction Stop).Source
-    $venvPython = Join-Path $BookingRoot ".venv\Scripts\python.exe"
-    if (-not (Test-Path $venvPython)) {
-        Invoke-Checked "Python virtual environment creation" {
-            & $python -m venv (Join-Path $BookingRoot ".venv")
-        }
-    }
-    Invoke-Checked "Python dependency installation" {
-        & $venvPython -m pip install --disable-pip-version-check -r (Join-Path $BookingRoot "requirements.txt")
-    }
-    Write-Stage "Python dependencies are ready."
-}
+    "%BOOKING%\.venv\Scripts\python.exe" -m pip install --disable-pip-version-check -r "%BOOKING%\requirements.txt" >> "%LOG%" 2>&1
+    if errorlevel 1 goto :fail
+    call :stage "Python dependencies are ready"
+) else (
+    call :stage "Python dependencies have not changed"
+)
 
-function Install-FrontendDependencies {
-    Write-Stage "Installing frontend dependencies..."
-    $npm = (Get-Command npm.cmd -ErrorAction Stop).Source
-    Push-Location $FrontendRoot
-    try {
-        Invoke-Checked "Frontend dependency installation" { & $npm ci }
-    }
-    finally {
-        Pop-Location
-    }
-    Write-Stage "Frontend dependencies are ready."
-}
+if "!FRONTEND_PACKAGES_CHANGED!"=="1" (
+    call :stage "Installing frontend dependencies"
+    set "FAILED_STAGE=Installing frontend dependencies"
+    cd /d "%FRONTEND%"
+    call npm.cmd ci >> "%LOG%" 2>&1
+    if errorlevel 1 goto :fail
+    call :stage "Frontend dependencies are ready"
+) else (
+    call :stage "Frontend dependencies have not changed"
+)
 
-function Build-Frontend {
-    Write-Stage "Checking frontend code..."
-    $npm = (Get-Command npm.cmd -ErrorAction Stop).Source
-    Push-Location $FrontendRoot
-    try {
-        Invoke-Checked "Frontend lint" { & $npm run lint }
-        Write-Stage "Frontend code check completed."
-        Write-Stage "Building the Rocket Portal..."
-        Invoke-Checked "Frontend build" { & $npm run build }
-    }
-    finally {
-        Pop-Location
-    }
-    Write-Stage "Rocket Portal build completed."
-}
+if "!FRONTEND_CHANGED!"=="1" (
+    call :stage "Checking the frontend code"
+    set "FAILED_STAGE=Checking the frontend code"
+    cd /d "%FRONTEND%"
+    call npm.cmd run lint >> "%LOG%" 2>&1
+    if errorlevel 1 goto :fail
+    call :stage "Frontend code check completed"
 
-function Build-Backend {
-    Write-Stage "Building the Rocket API..."
-    Push-Location $BackendRoot
-    try {
-        Invoke-Checked "Spring build" {
-            & (Join-Path $BackendRoot "mvnw.cmd") package -DskipTests
-        }
-    }
-    finally {
-        Pop-Location
-    }
-    Write-Stage "Rocket API build completed."
-}
+    call :stage "Building the Rocket Portal"
+    set "FAILED_STAGE=Building the Rocket Portal"
+    call npm.cmd run build >> "%LOG%" 2>&1
+    if errorlevel 1 goto :fail
+    call :stage "Rocket Portal build completed"
+) else (
+    call :stage "Rocket Portal build is already current"
+)
 
-function Get-SpringJar {
-    Get-ChildItem (Join-Path $BackendRoot "target") -Filter "*.jar" -ErrorAction SilentlyContinue |
-        Where-Object { $_.Name -notlike "*.original" } |
-        Select-Object -First 1
-}
+if "!BACKEND_CHANGED!"=="1" (
+    call :stage "Building the Rocket API"
+    set "FAILED_STAGE=Building the Rocket API"
+    cd /d "%BACKEND%"
+    call mvnw.cmd package -DskipTests >> "%LOG%" 2>&1
+    if errorlevel 1 goto :fail
+    call :stage "Rocket API build completed"
+) else (
+    call :stage "Rocket API build is already current"
+)
 
-function Start-RocketServers {
-    Write-Stage "Starting Rocket Server in the background..."
-    $venvPython = Join-Path $BookingRoot ".venv\Scripts\python.exe"
-    $npm = (Get-Command npm.cmd -ErrorAction Stop).Source
-    $java = (Get-Command java.exe -ErrorAction Stop).Source
-    $jar = Get-SpringJar
+call :start_servers
+if errorlevel 1 goto :fail
 
-    if (-not (Test-Path $venvPython)) {
-        throw "Python dependencies are missing. Run this updater again."
-    }
-    if (-not $jar) {
-        throw "The Rocket API build is missing. Run this updater again."
-    }
-    if (-not (Test-Path (Join-Path $FrontendRoot ".next\BUILD_ID"))) {
-        throw "The Rocket Portal build is missing. Run this updater again."
-    }
+goto :success
 
-    $env:ROCKET_FLASK_PORT = "8001"
-    $env:ROCKET_STAFF_FRONTEND_URL = "https://rocketpubserver.co.uk/staff"
-    $env:MICROSOFT_REDIRECT_URI = "https://rocketpubserver.co.uk/api/email/microsoft/callback"
+:stop_servers
+call :stage "Stopping all Rocket Server processes"
+set "FAILED_STAGE=Stopping Rocket Server processes"
 
-    Start-HiddenProcess "flask" $venvPython @("run.py") $BookingRoot
-    Start-HiddenProcess "spring" $java @("-jar", $jar.FullName) $BackendRoot
-    Start-HiddenProcess "frontend" $npm @("run", "start") $FrontendRoot
+for /l %%R in (1,1,10) do (
+    for /f %%P in ('powershell.exe -NoProfile -Command "Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue ^| Where-Object { $_.LocalPort -in 8000,8001,8080 } ^| Select-Object -ExpandProperty OwningProcess -Unique"') do (
+        taskkill.exe /PID %%P /T /F >> "%LOG%" 2>&1
+    )
 
-    for ($attempt = 1; $attempt -le 30; $attempt++) {
-        if (Test-RocketServersRunning) {
-            break
-        }
-        Start-Sleep -Seconds 2
-    }
+    for /f %%P in ('powershell.exe -NoProfile -Command "Get-CimInstance Win32_Process -ErrorAction SilentlyContinue ^| Where-Object { $_.Name -match '^(node^|java^|python^|pythonw^|npm^|cmd)\.exe$' -and $_.CommandLine -and $_.CommandLine -like '*%PROJECT%*' } ^| Select-Object -ExpandProperty ProcessId"') do (
+        if not "%%P"=="%PROCESS_ID%" taskkill.exe /PID %%P /T /F >> "%LOG%" 2>&1
+    )
 
-    if (-not (Test-RocketServersRunning)) {
-        $listeningPorts = @(Get-RocketListeners | Select-Object -ExpandProperty LocalPort -Unique)
-        $missingPorts = @($RocketPorts | Where-Object { $_ -notin $listeningPorts })
-        throw "Rocket Server did not start on port(s) $($missingPorts -join ', '). Check $LogRoot."
-    }
+    timeout /t 1 /nobreak >nul
 
-    Write-Stage "All Rocket Server services are running."
-    Write-Host "Rocket Server is running in the background."
-    Write-Host "Customer: https://rocketpubserver.co.uk/"
-    Write-Host "Booking:  https://rocketpubserver.co.uk/booking"
-    Write-Host "Staff:    https://rocketpubserver.co.uk/staff"
-    Write-Host "Logs:     $LogRoot"
-}
+    for /f %%C in ('powershell.exe -NoProfile -Command "@(Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue ^| Where-Object { $_.LocalPort -in 8000,8001,8080 }).Count"') do set "OPEN_PORTS=%%C"
+    if "!OPEN_PORTS!"=="0" goto :servers_stopped
+)
 
-Push-Location $ProjectRoot
-try {
-    Write-Stage "Checking Git for updates..."
-    $changedFiles = @()
-    $hasUpdate = $false
+echo One or more Rocket Server ports could not be stopped.
+exit /b 1
 
-    if (-not $Startup -and -not $Force) {
-        Invoke-Checked "Git fetch" { & git fetch origin }
-        $branch = (& git branch --show-current).Trim()
-        $remoteRef = "origin/$branch"
-        & git rev-parse --verify $remoteRef 2>$null | Out-Null
-        if ($LASTEXITCODE -ne 0) {
-            throw "The remote branch $remoteRef was not found."
-        }
+:servers_stopped
+if exist "%RUNTIME%\pids" del /q "%RUNTIME%\pids\*.pid" >nul 2>&1
+timeout /t 2 /nobreak >nul
+call :stage "All Rocket Server processes have stopped"
+exit /b 0
 
-        $localCommit = (& git rev-parse HEAD).Trim()
-        $remoteCommit = (& git rev-parse $remoteRef).Trim()
-        $hasUpdate = $localCommit -ne $remoteCommit
-        if ($hasUpdate) {
-            $changedFiles = @(& git diff --name-only $localCommit $remoteCommit)
-            Write-Stage "A new Git update was found."
-        }
-        else {
-            Write-Stage "No new Git update was found."
-        }
-    }
+:start_servers
+call :stage "Starting Rocket Server in the background"
+set "FAILED_STAGE=Starting Rocket Server"
 
-    if ($hasUpdate -and -not $Force -and -not $Startup) {
-        Write-Stage "Checking whether the desktop updater changed..."
-        $remoteLauncher = (& git show "${remoteRef}:Rocket-Server-Update.bat") -join "`n"
-        if ($LASTEXITCODE -ne 0 -or -not $remoteLauncher) {
-            throw "The updater could not be read from Git."
-        }
+set "SPRING_JAR="
+for /f "delims=" %%J in ('dir /b /a-d "%BACKEND%\target\*.jar" 2^>nul ^| findstr /V /I ".original"') do set "SPRING_JAR=%BACKEND%\target\%%J"
 
-        $currentLauncher = Get-Content -Raw -LiteralPath $env:ROCKET_LAUNCHER
-        $normalCurrent = ($currentLauncher -replace "`r`n", "`n").TrimEnd()
-        $normalRemote = ($remoteLauncher -replace "`r`n", "`n").TrimEnd()
+if not defined SPRING_JAR (
+    echo The Rocket API JAR file was not found.
+    exit /b 1
+)
 
-        if ($normalCurrent -ne $normalRemote) {
-            $windowsLauncher = ($normalRemote -replace "`n", "`r`n") + "`r`n"
-            [System.IO.File]::WriteAllText(
-                $env:ROCKET_LAUNCHER,
-                $windowsLauncher,
-                (New-Object System.Text.UTF8Encoding($false))
-            )
-            Write-Host ""
-            Write-Host "The desktop updater has been updated." -ForegroundColor Yellow
-            Write-Host "Close this window and run it again." -ForegroundColor Yellow
-            exit 20
-        }
-        Write-Stage "The desktop updater is already current."
-    }
+if not exist "%FRONTEND%\.next\BUILD_ID" (
+    echo The Rocket Portal production build was not found.
+    exit /b 1
+)
 
-    if (-not $hasUpdate -and -not $Force -and -not $Startup) {
-        if (Test-RocketServersRunning) {
-            Write-Host "Rocket Server is already up to date and running."
-            exit 0
-        }
-        Write-Host "Rocket Server is up to date. Restarting missing services."
-    }
+if not exist "%BOOKING%\.venv\Scripts\python.exe" (
+    echo The Python environment was not found.
+    exit /b 1
+)
 
-    if ($hasUpdate) {
-        $localChanges = & git status --porcelain
-        if ($localChanges) {
-            throw "Local project files have changes. Update stopped so they are not overwritten."
-        }
-    }
+set "ROCKET_FLASK_PORT=8001"
+set "ROCKET_STAFF_FRONTEND_URL=https://rocketpubserver.co.uk/staff"
+set "MICROSOFT_REDIRECT_URI=https://rocketpubserver.co.uk/api/email/microsoft/callback"
 
-    Stop-RocketServers
-    if ($hasUpdate) {
-        Write-Stage "Downloading and applying the Git update..."
-        Invoke-Checked "Git update" { & git merge --ff-only $remoteRef }
-        Write-Stage "Git update completed."
-    }
+start "" /b /D "%BOOKING%" "%BOOKING%\.venv\Scripts\python.exe" run.py 1>>"%LOGS%\flask.log" 2>>"%LOGS%\flask-error.log"
+start "" /b /D "%BACKEND%" java.exe -jar "%SPRING_JAR%" 1>>"%LOGS%\spring.log" 2>>"%LOGS%\spring-error.log"
+start "" /b /D "%FRONTEND%" cmd.exe /c npm.cmd run start 1>>"%LOGS%\frontend.log" 2>>"%LOGS%\frontend-error.log"
 
-    $venvPython = Join-Path $BookingRoot ".venv\Scripts\python.exe"
-    $frontendBuild = Join-Path $FrontendRoot ".next\BUILD_ID"
-    $nodeModules = Join-Path $FrontendRoot "node_modules"
-    $jar = Get-SpringJar
+for /l %%W in (1,1,30) do (
+    call :servers_running
+    if "!SERVERS_RUNNING!"=="1" goto :servers_started
 
-    $pythonRequirementsChanged = $Rebuild -or
-        ($changedFiles -contains "Rocket-Booking-Portal/requirements.txt") -or
-        -not (Test-Path $venvPython)
-    $frontendChanged = $Rebuild -or
-        @($changedFiles | Where-Object { $_ -like "Rocket-Portal/*" }).Count -gt 0 -or
-        -not (Test-Path $frontendBuild)
-    $frontendDependenciesChanged = $Rebuild -or
-        ($changedFiles -contains "Rocket-Portal/package.json") -or
-        ($changedFiles -contains "Rocket-Portal/package-lock.json") -or
-        -not (Test-Path $nodeModules)
-    $backendChanged = $Rebuild -or
-        @($changedFiles | Where-Object { $_ -like "Rocket-API/*" }).Count -gt 0 -or
-        -not $jar
+    if %%W==5 call :stage "Still waiting for the services to start"
+    if %%W==10 call :stage "The services are still starting"
+    if %%W==20 call :stage "Startup is taking longer than usual"
 
-    if ($pythonRequirementsChanged) { Install-PythonDependencies }
-    else { Write-Stage "Python dependencies have not changed." }
-    if ($frontendDependenciesChanged) { Install-FrontendDependencies }
-    else { Write-Stage "Frontend dependencies have not changed." }
-    if ($frontendChanged) { Build-Frontend }
-    else { Write-Stage "Rocket Portal build is already current." }
-    if ($backendChanged) { Build-Backend }
-    else { Write-Stage "Rocket API build is already current." }
+    timeout /t 2 /nobreak >nul
+)
 
-    Start-RocketServers
-}
-catch {
-    Write-Error $_
-    exit 1
-}
-finally {
-    Pop-Location
-}
+echo One or more services did not start on ports 8000, 8001 and 8080.
+echo Check the logs in %LOGS%.
+exit /b 1
+
+:servers_started
+call :stage "All Rocket Server services are running"
+echo.
+echo Customer: https://rocketpubserver.co.uk/
+echo Booking:  https://rocketpubserver.co.uk/booking
+echo Staff:    https://rocketpubserver.co.uk/staff
+echo Logs:     %LOGS%
+exit /b 0
+
+:servers_running
+set "SERVERS_RUNNING=0"
+for /f %%C in ('powershell.exe -NoProfile -Command "@(Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue ^| Where-Object { $_.LocalPort -in 8000,8001,8080 } ^| Select-Object -ExpandProperty LocalPort -Unique).Count"') do set "PORT_COUNT=%%C"
+if "!PORT_COUNT!"=="3" set "SERVERS_RUNNING=1"
+exit /b 0
+
+:stage
+echo.
+echo [%time:~0,8%] %~1
+>> "%LOG%" echo [%time:~0,8%] %~1
+exit /b 0
+
+:success
+>> "%LOG%" echo Rocket Server update completed successfully.
+echo.
+echo Rocket Server update completed successfully.
+del /q "%CHANGES%" >nul 2>&1
+del /q "%TEMP%\Rocket-Local-Changes.txt" >nul 2>&1
+pause
+exit /b 0
+
+:fail
+echo.
+echo UPDATE FAILED: %FAILED_STAGE%
+echo The full output is saved at:
+echo %LOG%
+>> "%LOG%" echo UPDATE FAILED: %FAILED_STAGE%
+del /q "%CHANGES%" >nul 2>&1
+del /q "%TEMP%\Rocket-Local-Changes.txt" >nul 2>&1
+pause
+exit /b 1
