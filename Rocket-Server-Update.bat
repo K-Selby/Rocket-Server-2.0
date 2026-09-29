@@ -3,7 +3,13 @@ setlocal EnableExtensions EnableDelayedExpansion
 
 net session >nul 2>&1
 if not "%errorlevel%"=="0" (
-    powershell.exe -NoProfile -Command "Start-Process -FilePath '%~f0' -Verb RunAs"
+    powershell.exe -NoProfile -Command "Start-Process -FilePath 'cmd.exe' -Verb RunAs -ArgumentList '/d /c ""%~f0""'"
+    if errorlevel 1 (
+        echo.
+        echo The updater could not request administrator access.
+        echo Right-click this file and choose Run as administrator.
+        timeout /t 10 /nobreak >nul
+    )
     exit /b
 )
 
@@ -297,9 +303,11 @@ exit /b 0
 :success
 echo.
 echo Rocket Server update completed successfully.
+echo This window will close automatically in 10 seconds.
 del /q "%CHANGES%" >nul 2>&1
 del /q "%LOCAL_CHANGES%" >nul 2>&1
 rmdir /s /q "%LOCK_DIR%" >nul 2>&1
+timeout /t 10 /nobreak >nul
 exit /b 0
 
 :fail
