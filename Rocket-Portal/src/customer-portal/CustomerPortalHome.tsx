@@ -9,6 +9,7 @@ import styles from "./customer.module.css";
 const links = [
   { href: "/", label: "Home", icon: "⌂" },
   { href: "/customer/food-menu", label: "Food Menu", icon: "▤" },
+  { href: "/customer/christmas-menu", label: "Christmas Menu", icon: "★" },
   { href: "/customer/allergens", label: "Allergens", icon: "A" },
   { href: "/staff/login", label: "Staff Login", icon: "→" },
 ];
@@ -73,10 +74,23 @@ export default function CustomerPortalHome() {
               priority
             />
             <div className={styles.heroCopy}>
-              <h1>Food Menu &amp; Allergens</h1>
-              <p>Choose what you would like to view.</p>
+              <h1>The Rocket Pub</h1>
+              <p className={styles.heroSubtitle}>Customer Portal</p>
+              <p>Menus, allergen information and table bookings in one place.</p>
             </div>
           </section>
+
+          <a className={styles.callButton} href="tel:+441512594694">
+            <span className={styles.callIcon} aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.69 2.8a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.33 1.84.56 2.8.69A2 2 0 0 1 22 16.92Z" />
+              </svg>
+            </span>
+            <span>
+              <strong>Book your table with us</strong>
+              <small>Call 0151 259 4694</small>
+            </span>
+          </a>
 
           <section className={styles.cards} aria-label="Customer options">
             <Link className={styles.card} href="/customer/food-menu">
@@ -87,6 +101,14 @@ export default function CustomerPortalHome() {
             <Link className={styles.card} href="/customer/allergens">
               <span className={styles.cardIcon}>A</span>
               <span><strong>Allergen Menu</strong><small>Search dishes and check allergen information.</small></span>
+              <span className={styles.arrow} aria-hidden="true">→</span>
+            </Link>
+            <Link className={`${styles.card} ${styles.christmasCard}`} href="/customer/christmas-menu">
+              <span className={styles.cardIcon} aria-hidden="true">★</span>
+              <span>
+                <strong>View Our Christmas Menu 🎄</strong>
+                <small>Prebook your Christmas dinner with us</small>
+              </span>
               <span className={styles.arrow} aria-hidden="true">→</span>
             </Link>
           </section>

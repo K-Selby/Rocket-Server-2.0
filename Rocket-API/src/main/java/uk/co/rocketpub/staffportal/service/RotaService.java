@@ -286,6 +286,8 @@ public class RotaService {
         }
 
         week.getHiddenStaffIds().add(staffMemberId);
+        staff.setActiveOnRota(false);
+        staffMemberRepository.save(staff);
 
         return rotaWeekRepository.save(week);
     }
@@ -299,6 +301,10 @@ public class RotaService {
 
         RotaWeek week = getRotaWeek(weekStart);
         requireEditable(week);
+
+        StaffMember staff = findStaff(staffMemberId);
+        staff.setActiveOnRota(true);
+        staffMemberRepository.save(staff);
 
         week.getHiddenStaffIds().remove(staffMemberId);
 

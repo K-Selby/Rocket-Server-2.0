@@ -9,7 +9,7 @@ import RocketLogo from "./RocketBrand";
 
 const API = "";
 const STAFF_PORTAL = "/staff";
-const BOOKING_PORTAL = process.env.NEXT_PUBLIC_BOOKING_PORTAL_URL || "https://rocketpubserver.co.uk/booking/dashboard";
+const BOOKING_PORTAL = "/booking";
 
 function staffPortalUrl(path: string) {
   return `${STAFF_PORTAL}${path}`;
@@ -53,10 +53,15 @@ export default function Navigation() {
 
   const [accountOpen, setAccountOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
 
   const canManage = currentUser?.role === "MANAGER" || currentUser?.role === "ADMIN";
   const visibleLinks = canManage ? [...links, { href: "/manager", label: "Manager", icon: "manager" }] : links;
+
+  function toggleDesktopSidebar() {
+    setSidebarCollapsed(current => !current);
+  }
 
   const badge = count > 0 ? (
     <span className="navigation-badge" aria-label={`${count} Inbox items needing attention`}>
@@ -77,7 +82,16 @@ export default function Navigation() {
 
   return (
     <>
-      <aside className={`desktop-sidebar ${mobileMenuOpen ? "mobile-sidebar-open" : ""}`}>
+      <aside className={`desktop-sidebar ${sidebarCollapsed ? "sidebar-collapsed" : ""} ${mobileMenuOpen ? "mobile-sidebar-open" : ""}`}>
+        <button
+          type="button"
+          className="desktop-sidebar-toggle"
+          aria-label={sidebarCollapsed ? "Expand navigation" : "Collapse navigation"}
+          aria-expanded={!sidebarCollapsed}
+          onClick={toggleDesktopSidebar}
+        >
+          <span /><span /><span />
+        </button>
         <button
           type="button"
           className="mobile-sidebar-toggle"

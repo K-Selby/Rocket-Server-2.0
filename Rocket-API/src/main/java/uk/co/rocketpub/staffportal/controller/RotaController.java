@@ -21,7 +21,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/rota")
-@CrossOrigin(origins = "https://rocketpubserver.co.uk")
+@CrossOrigin(origins = {"https://rocketpubserver.co.uk", "http://localhost:8000"}, allowCredentials = "true")
 public class RotaController {
 
     private final RotaService service;

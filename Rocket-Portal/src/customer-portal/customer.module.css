@@ -137,6 +137,14 @@
   font-size: 1.1rem;
 }
 
+.hero .heroSubtitle {
+  margin: 0 0 0.75rem;
+  color: var(--gold);
+  font-size: clamp(1.25rem, 2vw, 2rem);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
 .cards {
   width: 100%;
   margin-top: 1.5rem;
@@ -164,6 +172,113 @@
 .card:hover {
   transform: translateY(-2px);
   box-shadow: 0 12px 28px rgba(25, 48, 37, 0.12);
+}
+
+.christmasCard {
+  position: relative;
+  grid-column: 1 / -1;
+  overflow: hidden;
+  border-color: #c7a36c;
+  background:
+    radial-gradient(circle at 90% 20%, rgba(255, 255, 255, 0.16), transparent 22%),
+    linear-gradient(120deg, #7f202a, #a62d36 54%, #174832);
+  color: #fffaf0;
+}
+
+.christmasCard::after {
+  content: "✦  ❄  ✦";
+  position: absolute;
+  right: 4.5rem;
+  color: rgba(255, 236, 185, 0.72);
+  font-size: 1.35rem;
+  letter-spacing: 0.45rem;
+}
+
+.christmasCard .cardIcon {
+  border: 1px solid rgba(255, 240, 196, 0.58);
+  background: rgba(255, 255, 255, 0.13);
+  color: #ffe8a6;
+}
+
+.christmasCard small,
+.christmasCard .arrow {
+  color: #f7dfaa;
+}
+
+.callButton {
+  width: fit-content;
+  max-width: 100%;
+  margin: 1rem auto 0;
+  padding: 0.8rem 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  border: 1px solid #c9ad52;
+  border-radius: 999px;
+  background: #fff9e9;
+  color: #17472f;
+  text-decoration: none;
+  box-shadow: 0 6px 16px rgba(25, 48, 37, 0.1);
+  transition: transform 150ms ease, background 150ms ease;
+}
+
+.callButton:hover {
+  transform: translateY(-1px);
+  background: #fff3cf;
+}
+
+.callButton strong,
+.callButton small {
+  display: block;
+}
+
+.callButton small {
+  margin-top: 0.1rem;
+  color: #6f6441;
+}
+
+.callIcon {
+  width: 2.25rem;
+  height: 2.25rem;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #17472f;
+  color: #f3d979;
+}
+
+.callIcon svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.christmasMenuPanel {
+  margin-top: 1.5rem;
+  padding: clamp(0.65rem, 2vw, 1.25rem);
+  border: 1px solid #d9c29a;
+  border-radius: 1rem;
+  background: #fffaf0;
+  box-shadow: 0 8px 22px rgba(72, 39, 18, 0.1);
+}
+
+.christmasMenuImage {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 0.75rem;
+}
+
+.christmasBookingNotice {
+  margin: 1rem 0 0;
+  padding: 0.9rem 1rem;
+  border-radius: 0.7rem;
+  background: #8f2630;
+  color: white;
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 800;
 }
 
 .cardIcon {
@@ -571,6 +686,15 @@
 
   .cards {
     grid-template-columns: 1fr;
+  }
+
+  .callButton {
+    width: 100%;
+    border-radius: 0.8rem;
+  }
+
+  .christmasCard::after {
+    display: none;
   }
 
   .allergenWarning {

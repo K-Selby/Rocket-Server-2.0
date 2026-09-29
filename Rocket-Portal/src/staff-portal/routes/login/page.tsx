@@ -24,6 +24,7 @@ export default function LoginPage() {
   const [mode, setMode] = useState<Mode>("login");
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -54,7 +55,7 @@ export default function LoginPage() {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ login, password }),
+        body: JSON.stringify({ login, password, rememberMe }),
       });
 
       const data: LoginResponse | null = await response.json().catch(() => null);
@@ -209,6 +210,15 @@ export default function LoginPage() {
                 required
                 onChange={(event) => setPassword(event.target.value)}
               />
+            </label>
+
+            <label className={styles.rememberMe}>
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(event) => setRememberMe(event.target.checked)}
+              />
+              <span>Stay signed in on this device</span>
             </label>
 
             <div className={styles.textActions}>

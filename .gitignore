@@ -3,18 +3,8 @@
 Thumbs.db
 Desktop.ini
 
-# Python
-**/__pycache__/
-**/*.py[cod]
-**/.venv/
-**/venv/
-.pytest_cache/
-.mypy_cache/
-
-# Flask runtime data and secrets
+# Local secrets
 **/.env
-!**/.env.example
-Rocket-Booking-Portal/instance/
 
 # Node / Next.js
 **/node_modules/
@@ -46,3 +36,6 @@ data/microsoft_email_token*.json
 
 # Windows background process IDs and logs
 runtime/
+
+# Temporary generated previews
+tmp/

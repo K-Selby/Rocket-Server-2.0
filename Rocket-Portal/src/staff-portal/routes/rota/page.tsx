@@ -476,17 +476,6 @@ export default function RotaPage() {
       new Date()
     );
 
-  const hiddenIds =
-    new Set(
-      isEditing
-        ? week
-          ?.hiddenStaffIds ??
-        []
-        : week
-          ?.publishedHiddenStaffIds ??
-        []
-    );
-
   const dismissedAvailability =
     new Set(
       week
@@ -494,26 +483,18 @@ export default function RotaPage() {
       []
     );
 
-  const rotaStaff =
-    staff.filter(
-      member =>
-        member.activeOnRota
-    );
+  const rotaStaff = staff;
 
   const visibleStaff =
     rotaStaff.filter(
       member =>
-        !hiddenIds.has(
-          member.id
-        )
+        member.activeOnRota
     );
 
   const hiddenStaff =
     rotaStaff.filter(
       member =>
-        hiddenIds.has(
-          member.id
-        )
+        !member.activeOnRota
     );
 
   const coverTargets =
@@ -523,6 +504,7 @@ export default function RotaPage() {
           member.id !==
           currentUser?.id &&
           member.active &&
+          member.activeOnRota &&
           !isApprovedDayOff(
             member.id,
             swapShift.shiftDate
@@ -750,9 +732,9 @@ export default function RotaPage() {
       return null;
     }
 
-    const margin = 150;
-    const tableTop = 350;
-    const staffWidth = 650;
+    const margin = 65;
+    const tableTop = 245;
+    const staffWidth = 440;
 
     const tableWidth =
       width -
@@ -767,15 +749,15 @@ export default function RotaPage() {
     const availableHeight =
       height -
       tableTop -
-      120;
+      55;
 
-    const headerHeight = 150;
+    const headerHeight = 135;
 
     const rowHeight =
       Math.min(
-        180,
+        230,
         Math.max(
-          80,
+          105,
           (
             availableHeight -
             headerHeight
@@ -812,11 +794,11 @@ export default function RotaPage() {
     context.fillText(
       "Rocket Pub Staff Rota",
       margin,
-      115
+      78
     );
 
     context.font =
-      "48px Arial";
+      "50px Arial";
 
     context.fillStyle =
       "#333333";
@@ -826,7 +808,7 @@ export default function RotaPage() {
         weekStart
       ),
       margin,
-      210
+      165
     );
 
     context.fillStyle =
@@ -836,7 +818,7 @@ export default function RotaPage() {
 
     context.fillRect(
       margin,
-      275,
+      210,
       tableWidth,
       14
     );
@@ -922,7 +904,7 @@ export default function RotaPage() {
       tableTop,
       staffWidth,
       headerHeight,
-      "bold 44px Arial"
+      "bold 56px Arial"
     );
 
     weekDays.forEach(
@@ -980,23 +962,23 @@ export default function RotaPage() {
           "middle";
 
         context.font =
-          "bold 40px Arial";
+          "bold 52px Arial";
 
         context.fillText(
           dayName,
           x +
           dayWidth / 2,
-          tableTop + 52
+          tableTop + 46
         );
 
         context.font =
-          "34px Arial";
+          "42px Arial";
 
         context.fillText(
           dayDate,
           x +
           dayWidth / 2,
-          tableTop + 102
+          tableTop + 96
         );
       }
     );
@@ -1027,9 +1009,9 @@ export default function RotaPage() {
 
         context.font =
           `bold ${Math.min(
-            42,
+            58,
             rowHeight *
-            0.34
+            0.42
           )}px Arial`;
 
         context.textAlign =
@@ -1134,9 +1116,9 @@ export default function RotaPage() {
                 dayWidth,
                 rowHeight,
                 `bold ${Math.min(
-                  58,
+                  76,
                   rowHeight *
-                  0.48
+                  0.57
                 )}px Arial`,
                 "#333333"
               );
@@ -1157,9 +1139,9 @@ export default function RotaPage() {
               dayWidth,
               rowHeight,
               `bold ${Math.min(
-                44,
+                76,
                 rowHeight *
-                0.38
+                0.57
               )}px Arial`
             );
           }
@@ -1202,20 +1184,15 @@ export default function RotaPage() {
 
     if (!canvas) return;
 
-    const link =
-      document.createElement(
-        "a"
-      );
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      setError("Allow pop-ups to print the rota.");
+      return;
+    }
 
-    link.download =
-      `rocket-rota-${weekStart}-print.png`;
-
-    link.href =
-      canvas.toDataURL(
-        "image/png"
-      );
-
-    link.click();
+    const image = canvas.toDataURL("image/png");
+    printWindow.document.write(`<!doctype html><html><head><title>Rocket rota ${weekStart}</title><style>@page{size:A4 landscape;margin:6mm}html,body{margin:0;width:100%;height:100%}body{display:grid;place-items:center}img{width:100%;height:100%;object-fit:contain}</style></head><body><img src="${image}" alt="Staff rota" onload="window.print();window.close()"></body></html>`);
+    printWindow.document.close();
   }
 
   function moveWeek(
@@ -1823,10 +1800,17 @@ export default function RotaPage() {
         );
 
       setWeek(updated);
+      setStaff(current =>
+        current.map(item =>
+          item.id === member.id
+            ? { ...item, activeOnRota: false }
+            : item
+        )
+      );
       setStaffMenu(null);
 
       setNotice(
-        `${member.name} hidden from this rota.`
+        `${member.name} hidden from future rotas until restored.`
       );
     } catch (hideError) {
       setError(
@@ -1859,9 +1843,16 @@ export default function RotaPage() {
         );
 
       setWeek(updated);
+      setStaff(current =>
+        current.map(item =>
+          item.id === member.id
+            ? { ...item, activeOnRota: true }
+            : item
+        )
+      );
 
       setNotice(
-        `${member.name} restored to this rota.`
+        `${member.name} restored to the rota.`
       );
     } catch (showError) {
       setError(
@@ -2465,6 +2456,42 @@ export default function RotaPage() {
                     )}
                   </tbody>
                 </table>
+              </div>
+
+              <div className="rota-mobile-week" aria-label="Compact weekly rota">
+                {weekDays.map(day => {
+                  const dayEntries = visibleStaff
+                    .map(member => ({
+                      member,
+                      shift: findShift(member.id, day),
+                      dayOff: isApprovedDayOff(member.id, day),
+                    }))
+                    .filter(entry => entry.shift || entry.dayOff);
+
+                  return (
+                    <section className="rota-mobile-day" key={day}>
+                      <header>
+                        <strong>{formatDayName(day)}</strong>
+                        <span>{formatDayDate(day)}</span>
+                      </header>
+                      <div>
+                        {dayEntries.length === 0 ? (
+                          <p>No shifts</p>
+                        ) : dayEntries.map(({ member, shift, dayOff }) => (
+                          <button
+                            type="button"
+                            key={member.id}
+                            disabled={!isEditing || dayOff}
+                            onClick={() => shift && openCell(member, day, shift)}
+                          >
+                            <span>{member.name}</span>
+                            <strong>{dayOff ? "/" : formatShift(shift)}</strong>
+                          </button>
+                        ))}
+                      </div>
+                    </section>
+                  );
+                })}
               </div>
             </>
           )}

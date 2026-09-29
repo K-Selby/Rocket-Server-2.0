@@ -19,7 +19,7 @@ public class PasswordService {
 
     private final SecureRandom secureRandom = new SecureRandom();
 
-    // Checks a password against Flask/Werkzeug's scrypt format.
+    // Keeps existing staff passwords compatible with the legacy Werkzeug scrypt format.
     public boolean matches(String password, String storedHash) {
 
         if (password == null

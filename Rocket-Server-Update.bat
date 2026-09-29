@@ -8,7 +8,6 @@ if not "%errorlevel%"=="0" (
 )
 
 set "PROJECT=%USERPROFILE%\Documents\Rocket-Server-2.0"
-set "BOOKING=%PROJECT%\Rocket-Booking-Portal"
 set "FRONTEND=%PROJECT%\Rocket-Portal"
 set "BACKEND=%PROJECT%\Rocket-API"
 set "RUNTIME=%PROJECT%\runtime"
@@ -29,11 +28,6 @@ call :stage "Checking required programs"
 where git.exe
 if errorlevel 1 (
     set "FAILED_STAGE=Git is not installed or is not available in PATH"
-    goto :fail
-)
-where python.exe
-if errorlevel 1 (
-    set "FAILED_STAGE=Python is not installed or is not available in PATH"
     goto :fail
 )
 where npm.cmd
@@ -111,14 +105,10 @@ for %%A in ("%TEMP%\Rocket-Local-Changes.txt") do if %%~zA GTR 0 (
 
 git diff --name-only "%LOCAL_COMMIT%" "%REMOTE_COMMIT%" > "%CHANGES%"
 
-set "BOOKING_CHANGED=0"
-set "PYTHON_CHANGED=0"
 set "FRONTEND_CHANGED=0"
 set "FRONTEND_PACKAGES_CHANGED=0"
 set "BACKEND_CHANGED=0"
 
-findstr /B /C:"Rocket-Booking-Portal/" "%CHANGES%" >nul && set "BOOKING_CHANGED=1"
-findstr /X /C:"Rocket-Booking-Portal/requirements.txt" "%CHANGES%" >nul && set "PYTHON_CHANGED=1"
 findstr /B /C:"Rocket-Portal/" "%CHANGES%" >nul && set "FRONTEND_CHANGED=1"
 findstr /X /C:"Rocket-Portal/package.json" /C:"Rocket-Portal/package-lock.json" "%CHANGES%" >nul && set "FRONTEND_PACKAGES_CHANGED=1"
 findstr /B /C:"Rocket-API/" "%CHANGES%" >nul && set "BACKEND_CHANGED=1"
@@ -133,8 +123,6 @@ if "!SERVERS_RUNNING!"=="1" (
     goto :success
 )
 
-set "BOOKING_CHANGED=0"
-set "PYTHON_CHANGED=0"
 set "FRONTEND_CHANGED=0"
 set "FRONTEND_PACKAGES_CHANGED=0"
 set "BACKEND_CHANGED=0"
@@ -151,27 +139,10 @@ if not "%LOCAL_COMMIT%"=="%REMOTE_COMMIT%" (
     call :stage "Git update completed"
 )
 
-if not exist "%BOOKING%\.venv\Scripts\python.exe" set "PYTHON_CHANGED=1"
 if not exist "%FRONTEND%\node_modules" set "FRONTEND_PACKAGES_CHANGED=1"
 if not exist "%FRONTEND%\.next\BUILD_ID" set "FRONTEND_CHANGED=1"
 
 dir /b /a-d "%BACKEND%\target\*.jar" >nul 2>&1 || set "BACKEND_CHANGED=1"
-
-if "!PYTHON_CHANGED!"=="1" (
-    call :stage "Installing Python dependencies"
-    set "FAILED_STAGE=Installing Python dependencies"
-
-    if not exist "%BOOKING%\.venv\Scripts\python.exe" (
-        python.exe -m venv "%BOOKING%\.venv"
-        if errorlevel 1 goto :fail
-    )
-
-    "%BOOKING%\.venv\Scripts\python.exe" -m pip install --disable-pip-version-check -r "%BOOKING%\requirements.txt"
-    if errorlevel 1 goto :fail
-    call :stage "Python dependencies are ready"
-) else (
-    call :stage "Python dependencies have not changed"
-)
 
 if "!FRONTEND_PACKAGES_CHANGED!"=="1" (
     call :stage "Installing frontend dependencies"
@@ -223,8 +194,6 @@ set "FAILED_STAGE=Stopping Rocket Server processes"
 
 taskkill.exe /IM node.exe /T /F >nul 2>&1
 taskkill.exe /IM java.exe /T /F >nul 2>&1
-taskkill.exe /IM python.exe /T /F >nul 2>&1
-taskkill.exe /IM pythonw.exe /T /F >nul 2>&1
 
 for /l %%R in (1,1,15) do (
     call :count_open_ports
@@ -259,16 +228,9 @@ if not exist "%FRONTEND%\.next\BUILD_ID" (
     exit /b 1
 )
 
-if not exist "%BOOKING%\.venv\Scripts\python.exe" (
-    echo The Python environment was not found.
-    exit /b 1
-)
-
-set "ROCKET_FLASK_PORT=8001"
 set "ROCKET_STAFF_FRONTEND_URL=https://rocketpubserver.co.uk/staff"
 set "MICROSOFT_REDIRECT_URI=https://rocketpubserver.co.uk/api/email/microsoft/callback"
 
-powershell.exe -NoProfile -Command "Start-Process -FilePath '%BOOKING%\.venv\Scripts\python.exe' -ArgumentList 'run.py' -WorkingDirectory '%BOOKING%' -WindowStyle Hidden -RedirectStandardOutput '%LOGS%\flask.log' -RedirectStandardError '%LOGS%\flask-error.log'"
 powershell.exe -NoProfile -Command "Start-Process -FilePath 'java.exe' -ArgumentList '-jar','%SPRING_JAR%' -WorkingDirectory '%BACKEND%' -WindowStyle Hidden -RedirectStandardOutput '%LOGS%\spring.log' -RedirectStandardError '%LOGS%\spring-error.log'"
 powershell.exe -NoProfile -Command "Start-Process -FilePath 'cmd.exe' -ArgumentList '/c','npm.cmd run start' -WorkingDirectory '%FRONTEND%' -WindowStyle Hidden -RedirectStandardOutput '%LOGS%\frontend.log' -RedirectStandardError '%LOGS%\frontend-error.log'"
 
@@ -283,7 +245,7 @@ for /l %%W in (1,1,30) do (
     timeout /t 2 /nobreak >nul
 )
 
-echo One or more services did not start on ports 8000, 8001 and 8080.
+echo One or more services did not start on ports 8000 and 8080.
 echo Check the logs in %LOGS%.
 exit /b 1
 
@@ -298,7 +260,7 @@ exit /b 0
 
 :count_open_ports
 set "OPEN_PORTS=0"
-for %%Q in (8000 8001 8080) do (
+for %%Q in (8000 8080) do (
     powershell.exe -NoProfile -Command "if (Get-NetTCPConnection -State Listen -LocalPort %%Q -ErrorAction SilentlyContinue) { exit 0 } else { exit 1 }" >nul 2>&1
     if not errorlevel 1 set /a OPEN_PORTS+=1
 )
@@ -307,7 +269,7 @@ exit /b 0
 :servers_running
 call :count_open_ports
 set "SERVERS_RUNNING=0"
-if "!OPEN_PORTS!"=="3" set "SERVERS_RUNNING=1"
+if "!OPEN_PORTS!"=="2" set "SERVERS_RUNNING=1"
 exit /b 0
 
 :stage

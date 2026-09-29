@@ -25,7 +25,7 @@ import uk.co.rocketpub.staffportal.service.StaffMemberService;
 
 @RestController
 @RequestMapping("/api/staff")
-@CrossOrigin(origins = "https://rocketpubserver.co.uk", allowCredentials = "true")
+@CrossOrigin(origins = {"https://rocketpubserver.co.uk", "http://localhost:8000"}, allowCredentials = "true")
 public class StaffMemberController {
     private final StaffMemberService service;
     private final AuthService authService;

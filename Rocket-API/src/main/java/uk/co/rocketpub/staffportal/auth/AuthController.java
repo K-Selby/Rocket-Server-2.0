@@ -8,8 +8,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import uk.co.rocketpub.staffportal.account.ForgotPasswordRequest;
 import uk.co.rocketpub.staffportal.account.PasswordResetService;
 import uk.co.rocketpub.staffportal.account.ResetPasswordRequest;
@@ -18,7 +21,7 @@ import jakarta.servlet.http.HttpSession;
 @RestController
 @RequestMapping("/api/auth")
 @CrossOrigin(
-        origins = "https://rocketpubserver.co.uk",
+        origins = {"https://rocketpubserver.co.uk", "http://localhost:8000"},
         allowCredentials = "true"
 )
 public class AuthController {
@@ -34,7 +37,8 @@ public class AuthController {
     @PostMapping("/login")
     public AuthUser login(
             @RequestBody LoginRequest loginRequest,
-            HttpServletRequest request) {
+            HttpServletRequest request,
+            HttpServletResponse response) {
 
         /*
          * Validate the login first using the existing session.
@@ -53,6 +57,24 @@ public class AuthController {
                 AuthService.SESSION_USER_ID,
                 user.id()
         );
+
+        int lifetime = loginRequest.isRememberMe()
+                ? 60 * 60 * 24 * 30
+                : 60 * 60 * 12;
+        session.setMaxInactiveInterval(lifetime);
+
+        ResponseCookie.ResponseCookieBuilder cookie = ResponseCookie
+                .from("JSESSIONID", session.getId())
+                .httpOnly(true)
+                .sameSite("Lax")
+                .path("/")
+                .secure(isSecure(request));
+
+        if (loginRequest.isRememberMe()) {
+            cookie.maxAge(lifetime);
+        }
+
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.build().toString());
 
         return user;
     }
@@ -76,10 +98,29 @@ public class AuthController {
 
     @PostMapping("/logout")
     public Map<String, Boolean> logout(
-            HttpSession session) {
+            HttpSession session,
+            HttpServletRequest request,
+            HttpServletResponse response) {
 
         session.invalidate();
 
+        response.addHeader(
+                HttpHeaders.SET_COOKIE,
+                ResponseCookie.from("JSESSIONID", "")
+                        .httpOnly(true)
+                        .sameSite("Lax")
+                        .secure(isSecure(request))
+                        .path("/")
+                        .maxAge(0)
+                        .build()
+                        .toString()
+        );
+
         return Map.of("loggedOut", true);
+    }
+
+    private boolean isSecure(HttpServletRequest request) {
+        String forwardedProtocol = request.getHeader("X-Forwarded-Proto");
+        return request.isSecure() || "https".equalsIgnoreCase(forwardedProtocol);
     }
 }

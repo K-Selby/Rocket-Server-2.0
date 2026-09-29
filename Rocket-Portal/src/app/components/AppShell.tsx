@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Navigation from "./Navigation";
+import BookingNavigation from "./BookingNavigation";
 import { useCurrentUser } from "../context/CurrentUserContext";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
@@ -13,19 +14,21 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     ? pathname.slice("/staff".length) || "/"
     : pathname;
   const isStaffPage = pathname.startsWith("/staff");
+  const isBookingPage = pathname.startsWith("/booking");
+  const isProtectedPage = isStaffPage || isBookingPage;
   const isLoginPage = staffPath === "/login";
   const isSetupPage = staffPath === "/setup";
   const isAuthPage = isLoginPage || isSetupPage;
 
   useEffect(() => {
-    if (!isStaffPage) return;
+    if (!isProtectedPage) return;
     if (loadingUser) return;
     if (!currentUser && !isLoginPage) router.replace("/staff/login");
     else if (currentUser?.mustChangePassword && !isSetupPage) router.replace("/staff/setup");
     else if (currentUser && isLoginPage) router.replace(currentUser.mustChangePassword ? "/staff/setup" : "/staff/rota");
-  }, [currentUser, loadingUser, isLoginPage, isSetupPage, isStaffPage, router]);
+  }, [currentUser, loadingUser, isLoginPage, isSetupPage, isProtectedPage, router]);
 
-  if (!isStaffPage) return <>{children}</>;
+  if (!isProtectedPage) return <>{children}</>;
   // Login and first-time setup are separate from the portal layout.
   if (currentUser?.mustChangePassword && !isSetupPage) return null;
   if (isAuthPage) return <>{children}</>;
@@ -35,7 +38,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="portal-shell">
-      <Navigation />
+      {isBookingPage ? <BookingNavigation /> : <Navigation />}
       {children}
     </div>
   );

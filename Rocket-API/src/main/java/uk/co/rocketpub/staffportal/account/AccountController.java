@@ -13,7 +13,7 @@ import uk.co.rocketpub.staffportal.security.RequestOriginValidator;
 
 @RestController
 @RequestMapping("/api/account")
-@CrossOrigin(origins = "https://rocketpubserver.co.uk", allowCredentials = "true")
+@CrossOrigin(origins = {"https://rocketpubserver.co.uk", "http://localhost:8000"}, allowCredentials = "true")
 public class AccountController {
     private final AccountService accountService;
     private final RequestOriginValidator originValidator;

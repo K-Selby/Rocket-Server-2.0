@@ -13,7 +13,7 @@ import uk.co.rocketpub.staffportal.service.StaffSettingsService;
 
 @RestController
 @RequestMapping("/api/staff-settings")
-@CrossOrigin(origins = "https://rocketpubserver.co.uk", allowCredentials = "true")
+@CrossOrigin(origins = {"https://rocketpubserver.co.uk", "http://localhost:8000"}, allowCredentials = "true")
 public class StaffSettingsController {
 
     private final StaffSettingsService service;

@@ -15,7 +15,7 @@ import uk.co.rocketpub.staffportal.security.RequestOriginValidator;
 
 @RestController
 @RequestMapping("/api/email")
-@CrossOrigin(origins = "https://rocketpubserver.co.uk", allowCredentials = "true")
+@CrossOrigin(origins = {"https://rocketpubserver.co.uk", "http://localhost:8000"}, allowCredentials = "true")
 public class RocketEmailController {
     private final RocketEmailService emailService;
     private final AuthService authService;

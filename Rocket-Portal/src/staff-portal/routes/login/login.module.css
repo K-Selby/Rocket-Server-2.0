@@ -121,6 +121,24 @@
   outline-offset: 1px;
 }
 
+.form .rememberMe {
+  display: flex;
+  grid-template-columns: none;
+  align-items: center;
+  gap: 0.65rem;
+  color: #405047;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.form .rememberMe input {
+  width: 1.05rem;
+  min-height: 1.05rem;
+  height: 1.05rem;
+  margin: 0;
+  accent-color: #174f3d;
+}
+
 .form button {
   min-height: 44px;
 

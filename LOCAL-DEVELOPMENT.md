@@ -1,10 +1,9 @@
 # Rocket Server 2.0 local development
 
-The project runs as three local processes behind one browser address:
+The project runs as two local processes behind one browser address:
 
-- Booking Portal (Flask): `http://localhost:8001`
-- Customer and Staff Portal frontend, shared assets, and local gateway (Next.js): `http://localhost:8000`
-- Customer and Staff Portal API and authentication (Spring): `http://localhost:8080`
+- Customer, Booking and Staff Portal frontend, shared assets, and local gateway (Next.js): `http://localhost:8000`
+- Shared API and authentication (Spring): `http://localhost:8080`
 
 Use these browser addresses:
 
@@ -14,13 +13,9 @@ Use these browser addresses:
 
 The source folders are:
 
-- `Rocket-Portal` for the single Next.js application, internally separated into `(customer-portal)` and `(staff-portal)`
+- `Rocket-Portal` for the single Next.js application, with separate customer, booking and staff route folders
 - `Rocket-API` for the shared Spring API
-- `Rocket-Booking-Portal`
 - `data` for the shared `rocket_integration.db`
-
-Use `localhost` for all three addresses. The Booking Portal checks the Spring
-`JSESSIONID` cookie, and browser cookies are shared between localhost ports.
 
 ## 1. Start Spring
 
@@ -36,7 +31,7 @@ Run:
 ./mvnw spring-boot:run
 ```
 
-## 2. Start the Customer and Staff Portals
+## 2. Start the Rocket Portals
 
 Open another Terminal in:
 
@@ -51,37 +46,15 @@ npm install
 npm run dev
 ```
 
-## 3. Start Flask
-
-Open a third Terminal in:
-
-```text
-Rocket-Booking-Portal
-```
-
-Run:
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements.txt
-python3 run.py
-```
-
-The Customer Portal is provided entirely by Next.js and Spring. Flask is only
-required by the Booking Portal. Open
-`http://localhost:8000/staff/login`, sign in, and use the Booking Portal link to open
-`http://localhost:8000/booking/dashboard`.
-Opening a protected Flask page without a valid Spring session redirects to the
-Staff Portal login screen.
+Open `http://localhost:8000/staff/login`, sign in, and use the Booking Portal link.
+Every protected portal page uses the same Spring session.
 
 Optional environment variables:
 
 ```bash
 export ROCKET_STAFF_PORTAL_URL=http://localhost:8000/staff
 export ROCKET_STAFF_API_URL=http://localhost:8080
-export ROCKET_FLASK_PORT=8001
-export NEXT_PUBLIC_BOOKING_PORTAL_URL=http://localhost:8000/booking/dashboard
+export NEXT_PUBLIC_BOOKING_PORTAL_URL=http://localhost:8000/booking
 ```
 
 These defaults are already built in, so they are only needed when using
