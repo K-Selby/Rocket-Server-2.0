@@ -90,7 +90,7 @@ set "FAILED_STAGE=Checking for an updater update"
 git show "%REMOTE%:Rocket-Server-Update.bat" > "%REMOTE_FILE%" 2>nul
 if errorlevel 1 goto :fail
 
-powershell.exe -NoProfile -Command "$path='%REMOTE_FILE%'; $text=[IO.File]::ReadAllText($path) -replace '\r?\n','\r\n'; [IO.File]::WriteAllText($path,$text,[Text.Encoding]::ASCII)"
+powershell.exe -NoProfile -Command "$path='%REMOTE_FILE%'; $text=[IO.File]::ReadAllText($path) -replace '\r\n|\r|\n',[Environment]::NewLine; [IO.File]::WriteAllText($path,$text,[Text.Encoding]::ASCII)"
 if errorlevel 1 goto :fail
 
 powershell.exe -NoProfile -Command "$local=[IO.File]::ReadAllText('%~f0') -replace '\r\n','\n' -replace '\r','\n'; $remote=[IO.File]::ReadAllText('%REMOTE_FILE%') -replace '\r\n','\n' -replace '\r','\n'; if ($local -ceq $remote) { exit 0 } else { exit 1 }" >nul 2>&1
