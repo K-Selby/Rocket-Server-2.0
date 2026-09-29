@@ -994,6 +994,11 @@ h1 {
   display: none;
 }
 
+.rota-mobile-open-button,
+.rota-fullscreen-toolbar {
+  display: none;
+}
+
 .rota-table {
   width: 100%;
 
@@ -1028,11 +1033,15 @@ h1 {
 }
 
 .rota-table thead th:first-child {
+  left: 0;
+
   width: 12rem;
 
   padding-left: 0.9rem;
 
   text-align: left;
+
+  z-index: 8;
 }
 
 .rota-day-name,
@@ -1054,6 +1063,10 @@ h1 {
 }
 
 .rota-table tbody th {
+  position: sticky;
+
+  left: 0;
+
   width: 12rem;
 
   padding: 0 0.9rem;
@@ -1061,6 +1074,8 @@ h1 {
   background: #f7faf6;
 
   text-align: left;
+
+  z-index: 4;
 }
 
 .rota-staff-name {
@@ -3682,9 +3697,108 @@ h1 {
   }
 
   .rota-mobile-week {
+    display: none;
+  }
+
+  .rota-mobile-open-button {
+    width: 100%;
+    min-height: 8rem;
+    padding: 1.2rem;
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.6rem;
+    place-content: center;
+    gap: 0.35rem;
+    border: 1px solid rgba(185, 145, 35, 0.55);
+    border-radius: 0.8rem;
+    background: linear-gradient(145deg, #0d613c, #08462e);
+    color: white;
+    text-align: center;
+    cursor: pointer;
+    box-shadow: 0 0.7rem 1.6rem rgba(3, 52, 31, 0.2);
+  }
+
+  .rota-mobile-open-button span {
+    color: #ead373;
+    font-size: 1.25rem;
+    font-weight: 800;
+  }
+
+  .rota-mobile-open-button small {
+    max-width: 16rem;
+    color: #eef7f0;
+    font-size: 0.82rem;
+  }
+
+  .rota-scroll.rota-fullscreen {
+    position: fixed;
+    inset: 0;
+    z-index: 450;
+    display: block;
+    max-height: none;
+    padding: 0 0 env(safe-area-inset-bottom);
+    overflow: auto;
+    border-radius: 0;
+    background: #eef3ef;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .rota-fullscreen-toolbar {
+    position: sticky;
+    top: 0;
+    left: 0;
+    z-index: 30;
+    width: 100vw;
+    min-height: 4.25rem;
+    padding: calc(0.7rem + env(safe-area-inset-top)) 0.85rem 0.7rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    background: #073d28;
+    color: white;
+    box-shadow: 0 0.25rem 0.8rem rgba(0, 0, 0, 0.2);
+  }
+
+  .rota-fullscreen-toolbar > div {
+    display: grid;
+    gap: 0.15rem;
+  }
+
+  .rota-fullscreen-toolbar strong {
+    color: #e2c85d;
+    font-size: 1.05rem;
+  }
+
+  .rota-fullscreen-toolbar span {
+    color: #eff6f1;
+    font-size: 0.78rem;
+  }
+
+  .rota-fullscreen-toolbar button {
+    padding: 0.55rem 0.75rem;
+    border: 1px solid rgba(226, 200, 93, 0.7);
+    border-radius: 0.45rem;
+    background: transparent;
+    color: #e2c85d;
+    font-weight: 800;
+  }
+
+  .rota-fullscreen .rota-table {
+    min-width: 58rem;
+  }
+
+  .rota-fullscreen .rota-table thead th {
+    top: calc(4.25rem + env(safe-area-inset-top));
+  }
+
+  .rota-fullscreen .rota-table thead th:first-child,
+  .rota-fullscreen .rota-table tbody th {
+    width: 8.5rem;
+  }
+
+  .rota-fullscreen .rota-table th,
+  .rota-fullscreen .rota-table td {
+    height: 4.25rem;
   }
 
   .rota-mobile-day {
@@ -3926,5 +4040,31 @@ h1 {
 
   .inbox-month-items {
     max-height: 18rem;
+  }
+}
+
+@media (max-width: 950px) and (orientation: landscape) {
+  .rota-mobile-open-button,
+  .rota-mobile-week {
+    display: none;
+  }
+
+  .rota-scroll {
+    display: block;
+    max-height: calc(100vh - 1rem);
+  }
+
+  .rota-table {
+    min-width: 54rem;
+  }
+
+  .rota-table thead th:first-child,
+  .rota-table tbody th {
+    width: 8.5rem;
+  }
+
+  .rota-table th,
+  .rota-table td {
+    height: 4rem;
   }
 }

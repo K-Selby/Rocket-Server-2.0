@@ -454,6 +454,44 @@ export default function RotaPage() {
   ] =
     useState("");
 
+  const [
+    rotaOpen,
+    setRotaOpen,
+  ] =
+    useState(false);
+
+  useEffect(() => {
+    if (!rotaOpen) return;
+
+    const previousOverflow =
+      document.body.style.overflow;
+
+    document.body.style.overflow =
+      "hidden";
+
+    const closeOnEscape =
+      (event: KeyboardEvent) => {
+        if (event.key === "Escape") {
+          setRotaOpen(false);
+        }
+      };
+
+    window.addEventListener(
+      "keydown",
+      closeOnEscape
+    );
+
+    return () => {
+      document.body.style.overflow =
+        previousOverflow;
+
+      window.removeEventListener(
+        "keydown",
+        closeOnEscape
+      );
+    };
+  }, [rotaOpen]);
+
   const canManage =
     currentUser?.role ===
     "MANAGER" ||
@@ -2102,7 +2140,63 @@ export default function RotaPage() {
                   </div>
                 )}
 
-              <div className="rota-scroll">
+              <button
+                className="rota-mobile-open-button"
+                type="button"
+                onClick={() =>
+                  setRotaOpen(true)
+                }
+              >
+                <span>
+                  Open rota
+                </span>
+
+                <small>
+                  View the full week and swipe left or right
+                </small>
+              </button>
+
+              <div
+                className={`rota-scroll ${rotaOpen
+                    ? "rota-fullscreen"
+                    : ""
+                  }`}
+                role={rotaOpen
+                  ? "dialog"
+                  : undefined}
+                aria-modal={rotaOpen
+                  ? true
+                  : undefined}
+                aria-label={rotaOpen
+                  ? "Full-screen staff rota"
+                  : undefined}
+              >
+                {rotaOpen && (
+                  <div className="rota-fullscreen-toolbar">
+                    <div>
+                      <strong>
+                        Staff Rota
+                      </strong>
+
+                      <span>
+                        {formatWeekHeading(
+                          weekStart
+                        )}
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      aria-label="Close full-screen rota"
+                      onClick={() =>
+                        setRotaOpen(false)
+                      }
+                    >
+                      Close
+                    </button>
+                  </div>
+                )}
+
                 <table className="rota-table">
                   <thead>
                     <tr>
