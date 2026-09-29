@@ -37,7 +37,8 @@ public class StaffSettingsService {
     // Only Managers/Admin can change staff settings.
     public StaffSettings updateSettings(
             Long currentUserId,
-            boolean requireManagerApproval) {
+            boolean requireManagerApproval,
+            boolean notificationsEnabled) {
 
         StaffMember currentUser = staffRepository.findById(currentUserId)
                 .orElseThrow(() ->
@@ -58,6 +59,7 @@ public class StaffSettingsService {
 
         StaffSettings settings = getSettings();
         settings.setRequireManagerShiftSwapApproval(requireManagerApproval);
+        settings.setNotificationsEnabled(notificationsEnabled);
 
         return settingsRepository.save(settings);
     }

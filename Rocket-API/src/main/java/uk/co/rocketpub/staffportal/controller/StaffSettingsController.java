@@ -34,7 +34,8 @@ public class StaffSettingsController {
 
         return service.updateSettings(
                 currentUserId,
-                request.isRequireManagerShiftSwapApproval()
+                request.isRequireManagerShiftSwapApproval(),
+                request.isNotificationsEnabled()
         );
     }
 }

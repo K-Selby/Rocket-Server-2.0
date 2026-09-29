@@ -25,6 +25,13 @@ public class AccountController {
         this.originValidator = originValidator;
     }
 
+    @PostMapping("/notifications")
+    public AuthUser updateNotifications(@RequestBody NotificationSettingsRequest request, HttpSession session,
+            @RequestHeader(value = "Origin", required = false) String origin) {
+        originValidator.requireAllowed(origin);
+        return accountService.updateNotifications(request, session);
+    }
+
     @PostMapping("/password")
     public AuthUser changePassword(
             @RequestBody ChangePasswordRequest request,

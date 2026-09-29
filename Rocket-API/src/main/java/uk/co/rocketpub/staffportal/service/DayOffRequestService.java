@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import uk.co.rocketpub.staffportal.email.StaffNotificationService;
 import uk.co.rocketpub.staffportal.dto.CreateDayOffRequest;
 import uk.co.rocketpub.staffportal.model.DayOffRequest;
 import uk.co.rocketpub.staffportal.model.DayOffRequestStatus;
@@ -33,13 +34,16 @@ public class DayOffRequestService {
 
     private final StaffDiaryEntryRepository diaryRepository;
     private final StaffMemberRepository staffRepository;
+    private final StaffNotificationService notifications;
 
     public DayOffRequestService(
             StaffDiaryEntryRepository diaryRepository,
-            StaffMemberRepository staffRepository) {
+            StaffMemberRepository staffRepository,
+            StaffNotificationService notifications) {
 
         this.diaryRepository = diaryRepository;
         this.staffRepository = staffRepository;
+        this.notifications = notifications;
     }
 
     // Managers/Admin share the same day-off request history.
@@ -141,7 +145,9 @@ public class DayOffRequestService {
             entry.setReviewedAt(now);
         }
 
-        return buildRequest(diaryRepository.saveAll(entries));
+        DayOffRequest result = buildRequest(diaryRepository.saveAll(entries));
+        notifications.requestDecision(result.getRequester(), "day-off request", true);
+        return result;
     }
 
     // Declining keeps the request for Inbox history but removes it from the Diary.
@@ -160,7 +166,9 @@ public class DayOffRequestService {
             entry.setReviewedAt(now);
         }
 
-        return buildRequest(diaryRepository.saveAll(entries));
+        DayOffRequest result = buildRequest(diaryRepository.saveAll(entries));
+        notifications.requestDecision(result.getRequester(), "day-off request", false);
+        return result;
     }
 
     // Cancelling also keeps the grouped request for personal Inbox history.

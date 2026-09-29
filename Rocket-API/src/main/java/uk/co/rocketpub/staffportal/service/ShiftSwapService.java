@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import uk.co.rocketpub.staffportal.email.StaffNotificationService;
 import uk.co.rocketpub.staffportal.model.RotaShift;
 import uk.co.rocketpub.staffportal.model.RotaWeek;
 import uk.co.rocketpub.staffportal.model.ShiftSwapRequest;
@@ -28,17 +29,19 @@ public class ShiftSwapService {
     private final RotaShiftRepository shiftRepository;
     private final StaffMemberRepository staffRepository;
     private final StaffSettingsService settingsService;
+    private final StaffNotificationService notifications;
 
     public ShiftSwapService(
             ShiftSwapRequestRepository swapRepository,
             RotaShiftRepository shiftRepository,
             StaffMemberRepository staffRepository,
-            StaffSettingsService settingsService) {
+            StaffSettingsService settingsService, StaffNotificationService notifications) {
 
         this.swapRepository = swapRepository;
         this.shiftRepository = shiftRepository;
         this.staffRepository = staffRepository;
         this.settingsService = settingsService;
+        this.notifications = notifications;
     }
 
     public List<ShiftSwapRequest> getIncomingRequests(Long staffMemberId) {
@@ -167,7 +170,9 @@ public class ShiftSwapService {
         request.setStatus(ShiftSwapStatus.PENDING);
         request.setNote(cleanNote(note));
 
-        return swapRepository.save(request);
+        ShiftSwapRequest saved = swapRepository.save(request);
+        notifications.shiftRequest(targetStaff, requester.getName());
+        return saved;
     }
 
     /*
@@ -206,7 +211,9 @@ public class ShiftSwapService {
                     ShiftSwapStatus.AWAITING_MANAGER_APPROVAL
             );
 
-            return swapRepository.save(request);
+            ShiftSwapRequest saved = swapRepository.save(request);
+            notifications.managerShiftApprovalNeeded();
+            return saved;
         }
 
         transferShift(request);
@@ -215,7 +222,9 @@ public class ShiftSwapService {
                 ShiftSwapStatus.APPROVED
         );
 
-        return swapRepository.save(request);
+        ShiftSwapRequest saved = swapRepository.save(request);
+        notifications.shiftResult(List.of(request.getRequester(), request.getTargetStaffMember()), true);
+        return saved;
     }
 
     // Recipient declines a pending request.
@@ -242,7 +251,9 @@ public class ShiftSwapService {
         );
         request.setTargetRespondedAt(now());
 
-        return swapRepository.save(request);
+        ShiftSwapRequest saved = swapRepository.save(request);
+        notifications.shiftResult(List.of(request.getRequester()), false);
+        return saved;
     }
 
     // Requester may cancel while it is still awaiting a decision.
@@ -302,7 +313,9 @@ public class ShiftSwapService {
         request.setManagerActedBy(manager);
         request.setManagerActedAt(now());
 
-        return swapRepository.save(request);
+        ShiftSwapRequest saved = swapRepository.save(request);
+        notifications.shiftResult(List.of(request.getRequester(), request.getTargetStaffMember()), true);
+        return saved;
     }
 
     // Manager stops an accepted cover request.
@@ -323,7 +336,9 @@ public class ShiftSwapService {
         request.setManagerActedBy(manager);
         request.setManagerActedAt(now());
 
-        return swapRepository.save(request);
+        ShiftSwapRequest saved = swapRepository.save(request);
+        notifications.shiftResult(List.of(request.getRequester(), request.getTargetStaffMember()), false);
+        return saved;
     }
 
     // Transfers both working and published ownership of the shift.

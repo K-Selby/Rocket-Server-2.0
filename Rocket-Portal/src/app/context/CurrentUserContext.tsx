@@ -18,6 +18,10 @@ export type CurrentUser = {
   email: string | null;
   emailVerified: boolean;
   pendingEmail: string | null;
+  notificationsEnabled: boolean;
+  notifyRequestDecisions: boolean;
+  notifyShiftSwaps: boolean;
+  notifyPublishedRotas: boolean;
 };
 
 type CurrentUserContextType = {

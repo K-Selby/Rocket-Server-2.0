@@ -16,6 +16,13 @@ export default function AccountSettingsPage() {
   const [emailBusy, setEmailBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [notificationsEnabled, setNotificationsEnabled] = useState<boolean | null>(null);
+  const [notifyRequestDecisions, setNotifyRequestDecisions] = useState<boolean | null>(null);
+  const [notifyShiftSwaps, setNotifyShiftSwaps] = useState<boolean | null>(null);
+  const [notifyPublishedRotas, setNotifyPublishedRotas] = useState<boolean | null>(null);
+  const [notificationBusy, setNotificationBusy] = useState(false);
+
+
 
   async function request(path: string, options: RequestInit) {
     const response = await fetch(`${API}${path}`, {
@@ -113,6 +120,17 @@ export default function AccountSettingsPage() {
     }
   }
 
+  async function saveNotifications(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setNotificationBusy(true); setError(""); setNotice("");
+    try {
+      await request("/api/account/notifications", { method: "POST", body: JSON.stringify({ notificationsEnabled: notificationsEnabled ?? currentUser?.notificationsEnabled ?? true, notifyRequestDecisions: notifyRequestDecisions ?? currentUser?.notifyRequestDecisions ?? true, notifyShiftSwaps: notifyShiftSwaps ?? currentUser?.notifyShiftSwaps ?? true, notifyPublishedRotas: notifyPublishedRotas ?? currentUser?.notifyPublishedRotas ?? true }) });
+      setNotice("Your notification settings have been saved.");
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Notification settings could not be saved.");
+    } finally { setNotificationBusy(false); }
+  }
+
   if (loadingUser) {
     return <main className="page-content"><p>Loading account settings...</p></main>;
   }
@@ -182,6 +200,17 @@ export default function AccountSettingsPage() {
           )}
         </section>
       </div>
+
+      <section className="account-settings-card notification-settings-card">
+        <div className="account-card-header"><div><h2>Notifications</h2><p>Emails are sent only to your verified email address. If no email is verified, notifications are skipped.</p></div></div>
+        <form className="account-form" onSubmit={saveNotifications}>
+          <label className="checkbox-label"><input type="checkbox" checked={notificationsEnabled ?? currentUser.notificationsEnabled} onChange={event => setNotificationsEnabled(event.target.checked)} /><span><strong>Allow notifications</strong><br />Turn all of your Rocket notifications on or off.</span></label>
+          <label className="checkbox-label"><input type="checkbox" disabled={!(notificationsEnabled ?? currentUser.notificationsEnabled)} checked={notifyRequestDecisions ?? currentUser.notifyRequestDecisions} onChange={event => setNotifyRequestDecisions(event.target.checked)} /><span>Day-off request decisions</span></label>
+          <label className="checkbox-label"><input type="checkbox" disabled={!(notificationsEnabled ?? currentUser.notificationsEnabled)} checked={notifyShiftSwaps ?? currentUser.notifyShiftSwaps} onChange={event => setNotifyShiftSwaps(event.target.checked)} /><span>Shift swap updates after manager approval</span></label>
+          <label className="checkbox-label"><input type="checkbox" disabled={!(notificationsEnabled ?? currentUser.notificationsEnabled)} checked={notifyPublishedRotas ?? currentUser.notifyPublishedRotas} onChange={event => setNotifyPublishedRotas(event.target.checked)} /><span>New and updated published rotas</span></label>
+          <button className="primary-button" type="submit" disabled={notificationBusy}>{notificationBusy ? "Saving..." : "Save notification settings"}</button>
+        </form>
+      </section>
 
     </main>
   );

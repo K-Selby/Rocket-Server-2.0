@@ -4068,3 +4068,9 @@ h1 {
     height: 4rem;
   }
 }
+
+.notification-settings-card {
+  margin-top: 1.25rem;
+  max-width: 760px;
+}
+.staff-email-status { display: block; margin-top: .2rem; color: var(--muted-text); font-size: .78rem; font-weight: 500; }

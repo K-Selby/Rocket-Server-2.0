@@ -40,6 +40,16 @@ public class AccountService {
     }
 
     @Transactional
+    public AuthUser updateNotifications(NotificationSettingsRequest request, HttpSession session) {
+        StaffMember user = authService.currentStaffMember(session);
+        user.setNotificationsEnabled(request.notificationsEnabled());
+        user.setNotifyRequestDecisions(request.notifyRequestDecisions());
+        user.setNotifyShiftSwaps(request.notifyShiftSwaps());
+        user.setNotifyPublishedRotas(request.notifyPublishedRotas());
+        return AuthUser.from(staffRepository.save(user));
+    }
+
+    @Transactional
     public AuthUser changePassword(ChangePasswordRequest request, HttpSession session) {
         StaffMember user = authService.currentStaffMember(session);
         String currentPassword = request.currentPassword() == null ? "" : request.currentPassword();

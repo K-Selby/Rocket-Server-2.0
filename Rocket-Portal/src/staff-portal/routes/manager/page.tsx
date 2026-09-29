@@ -15,6 +15,7 @@ const API_URL = "";
 type StaffSettings = {
   id: number;
   requireManagerShiftSwapApproval: boolean;
+  notificationsEnabled: boolean;
 };
 
 type ManagedStaff = CurrentUser & {
@@ -345,7 +346,7 @@ export default function ManagerPage() {
     }
   }
 
-  async function updateManagerApproval(enabled: boolean) {
+  async function updateManagerApproval(enabled: boolean, notificationSetting = false) {
     if (!currentUser || !settings || savingSettings) return;
 
     setSavingSettings(true);
@@ -362,7 +363,8 @@ export default function ManagerPage() {
           },
           body: JSON.stringify({
             ...settings,
-            requireManagerShiftSwapApproval: enabled,
+            requireManagerShiftSwapApproval: notificationSetting ? settings.requireManagerShiftSwapApproval : enabled,
+            notificationsEnabled: notificationSetting ? enabled : settings.notificationsEnabled,
           }),
         }
       );
@@ -380,8 +382,8 @@ export default function ManagerPage() {
 
       setNotice(
         enabled
-          ? "Manager approval is now required for shift covers."
-          : "Shift covers can now complete without manager approval."
+          ? notificationSetting ? "Notifications are enabled for everyone." : "Manager approval is now required for shift covers."
+          : notificationSetting ? "Notifications are disabled for everyone." : "Shift covers can now complete without manager approval."
       );
     } catch (err) {
       setError(
@@ -583,9 +585,7 @@ export default function ManagerPage() {
                 >
                   <div className="staff-management-summary">
                     <div className="staff-management-name">
-                      <strong>
-                        {staffMember.name}
-                      </strong>
+                      <div><strong>{staffMember.name}</strong><small className="staff-email-status">{staffMember.emailVerified && staffMember.email ? staffMember.email : "Email not bound or verified"}</small></div>
 
                       {isAdmin && (
                         <span className="protected-label">
@@ -717,6 +717,11 @@ export default function ManagerPage() {
           {!settings ? (
             <p>Loading settings...</p>
           ) : (
+            <>
+            <label className="checkbox-label">
+              <input type="checkbox" checked={settings.notificationsEnabled} disabled={savingSettings} onChange={event => updateManagerApproval(event.target.checked, true)} />
+              <span><strong>Enable staff notifications</strong><br />Turn email notifications on or off for everyone.</span>
+            </label>
             <label className="checkbox-label">
               <input
                 type="checkbox"
@@ -739,6 +744,7 @@ export default function ManagerPage() {
                 Staff must still accept the cover first. The rota only changes after a Manager approves it.
               </span>
             </label>
+            </>
           )}
         </section>
       )}

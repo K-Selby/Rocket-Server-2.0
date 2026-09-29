@@ -52,6 +52,18 @@ public class StaffMember {
     private String emailVerificationExpiresAtValue;
 
     // Controls whether the account can sign in.
+    @Column(name = "notifications_enabled", nullable = false)
+    private boolean notificationsEnabled = true;
+
+    @Column(name = "notify_request_decisions", nullable = false)
+    private boolean notifyRequestDecisions = true;
+
+    @Column(name = "notify_shift_swaps", nullable = false)
+    private boolean notifyShiftSwaps = true;
+
+    @Column(name = "notify_published_rotas", nullable = false)
+    private boolean notifyPublishedRotas = true;
+
     @Column(name = "active", nullable = false)
     private boolean active = true;
 
@@ -143,6 +155,15 @@ public class StaffMember {
     public void setEmailVerificationExpiresAt(LocalDateTime expiresAt) {
         this.emailVerificationExpiresAtValue = formatDateTime(expiresAt);
     }
+
+    public boolean isNotificationsEnabled() { return notificationsEnabled; }
+    public void setNotificationsEnabled(boolean value) { notificationsEnabled = value; }
+    public boolean isNotifyRequestDecisions() { return notifyRequestDecisions; }
+    public void setNotifyRequestDecisions(boolean value) { notifyRequestDecisions = value; }
+    public boolean isNotifyShiftSwaps() { return notifyShiftSwaps; }
+    public void setNotifyShiftSwaps(boolean value) { notifyShiftSwaps = value; }
+    public boolean isNotifyPublishedRotas() { return notifyPublishedRotas; }
+    public void setNotifyPublishedRotas(boolean value) { notifyPublishedRotas = value; }
 
     public boolean isActive() {
         return active;

@@ -3,6 +3,7 @@ package uk.co.rocketpub.staffportal.service;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import uk.co.rocketpub.staffportal.email.StaffNotificationService;
 import uk.co.rocketpub.staffportal.dto.CreateRotaShiftRequest;
 import uk.co.rocketpub.staffportal.dto.CreateRotaWeekRequest;
 import uk.co.rocketpub.staffportal.dto.RotaShiftView;
@@ -31,15 +32,17 @@ public class RotaService {
     private final RotaWeekRepository rotaWeekRepository;
     private final RotaShiftRepository rotaShiftRepository;
     private final StaffMemberRepository staffMemberRepository;
+    private final StaffNotificationService notifications;
 
     public RotaService(
             RotaWeekRepository rotaWeekRepository,
             RotaShiftRepository rotaShiftRepository,
-            StaffMemberRepository staffMemberRepository) {
+            StaffMemberRepository staffMemberRepository, StaffNotificationService notifications) {
 
         this.rotaWeekRepository = rotaWeekRepository;
         this.rotaShiftRepository = rotaShiftRepository;
         this.staffMemberRepository = staffMemberRepository;
+        this.notifications = notifications;
     }
 
     public List<RotaWeek> getRotaWeeks(Long currentUserId) {
@@ -263,7 +266,9 @@ public class RotaService {
         week.setPublishedAt(LocalDateTime.now());
         week.setPublishedBy(manager);
 
-        return rotaWeekRepository.save(week);
+        RotaWeek published = rotaWeekRepository.save(week);
+        notifications.rotaPublished(LocalDate.parse(weekStart));
+        return published;
     }
 
     public RotaWeek hideStaff(

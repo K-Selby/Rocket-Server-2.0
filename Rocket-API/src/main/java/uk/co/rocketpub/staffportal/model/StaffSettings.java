@@ -16,6 +16,9 @@ public class StaffSettings {
     @Column(name = "require_manager_shift_cover_approval", nullable = false)
     private boolean requireManagerShiftSwapApproval = false;
 
+    @Column(name = "notifications_enabled", nullable = false)
+    private boolean notificationsEnabled = true;
+
     public StaffSettings() {
     }
 
@@ -38,4 +41,6 @@ public class StaffSettings {
     public void setRequireManagerShiftSwapApproval(boolean requireManagerShiftSwapApproval) {
         this.requireManagerShiftSwapApproval = requireManagerShiftSwapApproval;
     }
+    public boolean isNotificationsEnabled() { return notificationsEnabled; }
+    public void setNotificationsEnabled(boolean value) { notificationsEnabled = value; }
 }

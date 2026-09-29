@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import uk.co.rocketpub.staffportal.email.StaffNotificationService;
 import uk.co.rocketpub.staffportal.dto.CreateStaffDiaryEntryRequest;
 import uk.co.rocketpub.staffportal.model.StaffDiaryEntry;
 import uk.co.rocketpub.staffportal.model.StaffDiaryStatus;
@@ -29,13 +30,16 @@ public class StaffDiaryService {
 
     private final StaffDiaryEntryRepository diaryRepository;
     private final StaffMemberRepository staffRepository;
+    private final StaffNotificationService notifications;
 
     public StaffDiaryService(
             StaffDiaryEntryRepository diaryRepository,
-            StaffMemberRepository staffRepository) {
+            StaffMemberRepository staffRepository,
+            StaffNotificationService notifications) {
 
         this.diaryRepository = diaryRepository;
         this.staffRepository = staffRepository;
+        this.notifications = notifications;
     }
 
     // Returns all visible Diary entries.
@@ -146,6 +150,7 @@ public class StaffDiaryService {
         }
 
         diaryRepository.saveAll(entries);
+        notifications.requestDecision(selectedEntry.getStaffMember(), "day-off request", true);
 
         return selectedEntry;
     }
@@ -178,6 +183,7 @@ public class StaffDiaryService {
         }
 
         diaryRepository.saveAll(entries);
+        notifications.requestDecision(selectedEntry.getStaffMember(), "day-off request", false);
     }
 
     /*

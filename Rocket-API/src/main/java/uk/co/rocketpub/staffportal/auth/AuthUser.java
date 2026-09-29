@@ -10,7 +10,11 @@ public record AuthUser(
         boolean mustChangePassword,
         String email,
         boolean emailVerified,
-        String pendingEmail) {
+        String pendingEmail,
+        boolean notificationsEnabled,
+        boolean notifyRequestDecisions,
+        boolean notifyShiftSwaps,
+        boolean notifyPublishedRotas) {
 
     public static AuthUser from(
             StaffMember staffMember) {
@@ -22,7 +26,11 @@ public record AuthUser(
                 staffMember.isMustChangePassword(),
                 staffMember.getEmail(),
                 staffMember.isEmailVerified(),
-                staffMember.getPendingEmail()
+                staffMember.getPendingEmail(),
+                staffMember.isNotificationsEnabled(),
+                staffMember.isNotifyRequestDecisions(),
+                staffMember.isNotifyShiftSwaps(),
+                staffMember.isNotifyPublishedRotas()
         );
     }
 }
