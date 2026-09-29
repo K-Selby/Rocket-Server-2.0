@@ -12,8 +12,11 @@ set "FRONTEND=%PROJECT%\Rocket-Portal"
 set "BACKEND=%PROJECT%\Rocket-API"
 set "RUNTIME=%PROJECT%\runtime"
 set "LOGS=%RUNTIME%\logs"
-set "REMOTE_FILE=%TEMP%\Rocket-Server-Update-Remote.bat"
-set "CHANGES=%TEMP%\Rocket-Server-Changes.txt"
+set "RUN_ID=%RANDOM%-%RANDOM%"
+set "LOCK_DIR=%TEMP%\Rocket-Server-Updater.lock"
+set "REMOTE_FILE=%TEMP%\Rocket-Server-Update-Remote-%RUN_ID%.bat"
+set "CHANGES=%TEMP%\Rocket-Server-Changes-%RUN_ID%.txt"
+set "LOCAL_CHANGES=%TEMP%\Rocket-Local-Changes-%RUN_ID%.txt"
 set "FAILED_STAGE=Unknown stage"
 
 if not exist "%PROJECT%" (
@@ -23,6 +26,16 @@ if not exist "%PROJECT%" (
 )
 
 if not exist "%LOGS%" mkdir "%LOGS%"
+
+powershell.exe -NoProfile -Command "$path='%LOCK_DIR%'; if ((Test-Path -LiteralPath $path) -and ((Get-Date) - (Get-Item -LiteralPath $path).LastWriteTime).TotalMinutes -gt 30) { Remove-Item -LiteralPath $path -Recurse -Force }" >nul 2>&1
+mkdir "%LOCK_DIR%" >nul 2>&1
+if errorlevel 1 (
+    echo.
+    echo Another Rocket Server update is already running.
+    echo Let that update finish before opening this file again.
+    timeout /t 10 /nobreak >nul
+    exit /b 2
+)
 
 call :stage "Checking required programs"
 where git.exe
@@ -77,13 +90,17 @@ set "FAILED_STAGE=Checking for an updater update"
 git show "%REMOTE%:Rocket-Server-Update.bat" > "%REMOTE_FILE%" 2>nul
 if errorlevel 1 goto :fail
 
-fc /b "%~f0" "%REMOTE_FILE%" >nul 2>&1
+powershell.exe -NoProfile -Command "$path='%REMOTE_FILE%'; $text=[IO.File]::ReadAllText($path) -replace '\r?\n','\r\n'; [IO.File]::WriteAllText($path,$text,[Text.Encoding]::ASCII)"
+if errorlevel 1 goto :fail
+
+powershell.exe -NoProfile -Command "$local=[IO.File]::ReadAllText('%~f0') -replace '\r\n','\n' -replace '\r','\n'; $remote=[IO.File]::ReadAllText('%REMOTE_FILE%') -replace '\r\n','\n' -replace '\r','\n'; if ($local -ceq $remote) { exit 0 } else { exit 1 }" >nul 2>&1
 if errorlevel 1 (
-    set "REPLACE_HELPER=%TEMP%\Rocket-Replace-Updater-%RANDOM%.cmd"
+    set "REPLACE_HELPER=%TEMP%\Rocket-Replace-Updater-%RUN_ID%.cmd"
     > "!REPLACE_HELPER!" echo @echo off
     >> "!REPLACE_HELPER!" echo timeout /t 4 /nobreak ^>nul
     >> "!REPLACE_HELPER!" echo copy /y "%REMOTE_FILE%" "%~f0" ^>nul
     >> "!REPLACE_HELPER!" echo del /q "%REMOTE_FILE%" ^>nul 2^>^&1
+    >> "!REPLACE_HELPER!" echo rmdir /s /q "%LOCK_DIR%" ^>nul 2^>^&1
     >> "!REPLACE_HELPER!" echo del /q "%%~f0" ^>nul 2^>^&1
     start "" /min cmd.exe /c "!REPLACE_HELPER!"
     echo.
@@ -96,8 +113,8 @@ if errorlevel 1 (
 
 del /q "%REMOTE_FILE%" >nul 2>&1
 
-git status --porcelain > "%TEMP%\Rocket-Local-Changes.txt"
-for %%A in ("%TEMP%\Rocket-Local-Changes.txt") do if %%~zA GTR 0 (
+git status --porcelain > "%LOCAL_CHANGES%"
+for %%A in ("%LOCAL_CHANGES%") do if %%~zA GTR 0 (
     set "FAILED_STAGE=Local project files have changes"
     echo Local project files have changes. The update stopped to protect them.
     goto :fail
@@ -281,12 +298,18 @@ exit /b 0
 echo.
 echo Rocket Server update completed successfully.
 del /q "%CHANGES%" >nul 2>&1
-del /q "%TEMP%\Rocket-Local-Changes.txt" >nul 2>&1
+del /q "%LOCAL_CHANGES%" >nul 2>&1
+rmdir /s /q "%LOCK_DIR%" >nul 2>&1
 exit /b 0
 
 :fail
 echo.
 echo UPDATE FAILED: %FAILED_STAGE%
 del /q "%CHANGES%" >nul 2>&1
-del /q "%TEMP%\Rocket-Local-Changes.txt" >nul 2>&1
+del /q "%LOCAL_CHANGES%" >nul 2>&1
+del /q "%REMOTE_FILE%" >nul 2>&1
+rmdir /s /q "%LOCK_DIR%" >nul 2>&1
+echo.
+echo This window will stay open for 20 seconds so the error can be read.
+timeout /t 20 /nobreak >nul
 exit /b 1
