@@ -92,6 +92,7 @@ export default function CustomerPortalHome() {
             </span>
           </a>
 
+
           <section className={styles.cards} aria-label="Customer options">
             <Link className={styles.card} href="/customer/food-menu">
               <span className={styles.cardIcon}>PDF</span>
