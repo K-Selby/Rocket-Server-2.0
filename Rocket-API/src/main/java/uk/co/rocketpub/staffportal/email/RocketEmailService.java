@@ -145,13 +145,21 @@ public class RocketEmailService {
     }
 
     public synchronized void sendEmail(String recipient, String subject, String body) {
+        sendEmail(recipient, subject, body, "Text");
+    }
+
+    public synchronized void sendHtmlEmail(String recipient, String subject, String body) {
+        sendEmail(recipient, subject, body, "HTML");
+    }
+
+    private void sendEmail(String recipient, String subject, String body, String contentType) {
         String token = getAccessToken();
         if (token == null) throw new IllegalStateException("Rocket Email is not connected.");
 
         Map<String, Object> payload = Map.of(
                 "message", Map.of(
                         "subject", subject,
-                        "body", Map.of("contentType", "Text", "content", body),
+                        "body", Map.of("contentType", contentType, "content", body),
                         "toRecipients", List.of(Map.of("emailAddress", Map.of("address", recipient)))),
                 "saveToSentItems", true);
 

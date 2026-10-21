@@ -61,6 +61,12 @@ export default function RocketEmailCard() {
     }, []);
 
     async function act(action: "connect" | "disconnect" | "refresh") {
+        if (action === "connect" && status && !status.configured) {
+            setNotice("");
+            setError("Microsoft Email is not configured on this server. Add the Microsoft client ID and client secret, restart the Java server, then try again.");
+            return;
+        }
+
         setBusy(true);
         setError("");
         setNotice("");
@@ -141,7 +147,13 @@ export default function RocketEmailCard() {
                         Disconnect
                     </button>
                 ) : (
-                    <button type="button" className="primary-button" disabled={busy || !status?.configured} onClick={() => act("connect")}>
+                    <button
+                        type="button"
+                        className="primary-button"
+                        disabled={busy || !status}
+                        onClick={() => act("connect")}
+                        title={status?.configured ? undefined : "Microsoft client ID and client secret are required"}
+                    >
                         Connect Microsoft Email
                     </button>
                 )}

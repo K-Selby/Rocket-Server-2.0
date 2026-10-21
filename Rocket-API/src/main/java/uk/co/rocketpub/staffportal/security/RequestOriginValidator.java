@@ -1,6 +1,7 @@
 package uk.co.rocketpub.staffportal.security;
 
 import java.net.URI;
+import java.util.HashSet;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -17,7 +18,9 @@ public class RequestOriginValidator {
             String frontendUrl) {
         URI frontendUri = URI.create(frontendUrl);
         String configuredOrigin = frontendUri.getScheme() + "://" + frontendUri.getRawAuthority();
-        this.allowedOrigins = Set.of(configuredOrigin, "http://localhost:8000");
+        this.allowedOrigins = new HashSet<>();
+        this.allowedOrigins.add(configuredOrigin);
+        this.allowedOrigins.add("http://localhost:8000");
     }
 
     public void requireAllowed(String origin) {

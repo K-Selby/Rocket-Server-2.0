@@ -146,7 +146,7 @@ public class DayOffRequestService {
         }
 
         DayOffRequest result = buildRequest(diaryRepository.saveAll(entries));
-        notifications.requestDecision(result.getRequester(), "day-off request", true);
+        notifications.requestDecision(result.getRequester(), result.getDates(), true);
         return result;
     }
 
@@ -167,7 +167,7 @@ public class DayOffRequestService {
         }
 
         DayOffRequest result = buildRequest(diaryRepository.saveAll(entries));
-        notifications.requestDecision(result.getRequester(), "day-off request", false);
+        notifications.requestDecision(result.getRequester(), result.getDates(), false);
         return result;
     }
 

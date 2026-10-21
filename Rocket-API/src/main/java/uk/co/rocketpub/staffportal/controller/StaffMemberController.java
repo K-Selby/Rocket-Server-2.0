@@ -18,6 +18,7 @@ import org.springframework.web.server.ResponseStatusException;
 import jakarta.servlet.http.HttpSession;
 import uk.co.rocketpub.staffportal.auth.AuthService;
 import uk.co.rocketpub.staffportal.auth.AuthUser;
+import uk.co.rocketpub.staffportal.dto.UpdateStaffNotificationsRequest;
 import uk.co.rocketpub.staffportal.model.StaffMember;
 import uk.co.rocketpub.staffportal.model.StaffRole;
 import uk.co.rocketpub.staffportal.security.RequestOriginValidator;
@@ -73,6 +74,17 @@ public class StaffMemberController {
         originValidator.requireAllowed(origin);
         requireManager(session);
         return service.updateStaffMember(id, staffMember);
+    }
+
+    @PutMapping("/{id}/notifications")
+    public StaffMember updateNotifications(
+            @PathVariable Long id,
+            @RequestBody UpdateStaffNotificationsRequest request,
+            HttpSession session,
+            @RequestHeader(value = "Origin", required = false) String origin) {
+        originValidator.requireAllowed(origin);
+        requireManager(session);
+        return service.updateNotifications(id, request.notificationsEnabled());
     }
 
     @DeleteMapping("/{id}")

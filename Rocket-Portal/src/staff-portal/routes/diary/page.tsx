@@ -744,6 +744,57 @@ export default function DiaryPage() {
             </div>
           </div>
 
+          <section className="diary-mobile-month" aria-label={`${monthTitle} diary`}>
+            <div className="diary-mobile-weekdays" aria-hidden="true">
+              {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => (
+                <span key={`${day}-${index}`}>{day}</span>
+              ))}
+            </div>
+
+            <div className="diary-mobile-days">
+              {calendarDays.map(date => {
+                const dateString = formatLocalDate(date);
+                const inCurrentMonth = date.getMonth() === month;
+                const isSelected = selectedDates.includes(dateString);
+                const dayEntries = diaryEntries.filter(entry => entry.entryDate === dateString);
+                const hasDayOff = dayEntries.some(entry => entry.type === "DAY_OFF");
+                const hasAvailability = dayEntries.some(entry => entry.type === "AVAILABLE");
+                const hasNoOneOff = dayEntries.some(entry => entry.type === "NO_ONE_OFF");
+                const hasEvent = events.some(event => event.eventDate === dateString);
+                const hasParty = largeParties.some(party => party.eventDate === dateString);
+
+                return (
+                  <button
+                    type="button"
+                    className={`diary-mobile-day ${!inCurrentMonth ? "outside-month" : ""} ${
+                      isSelected ? "selected" : ""
+                    }`}
+                    key={dateString}
+                    onClick={() => selectDate(dateString)}
+                    aria-pressed={isSelected}
+                    aria-label={formatSelectedDate(dateString)}
+                  >
+                    <span className="diary-mobile-date-number">{date.getDate()}</span>
+                    <span className="diary-mobile-markers" aria-hidden="true">
+                      {hasDayOff && <i className="day-off" />}
+                      {hasAvailability && <i className="availability" />}
+                      {hasEvent && <i className="event" />}
+                      {hasParty && <i className="party" />}
+                      {hasNoOneOff && <i className="no-one-off" />}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="diary-mobile-key" aria-label="Calendar key">
+              <span><i className="day-off" /> Day off</span>
+              <span><i className="availability" /> Shift</span>
+              <span><i className="event" /> Event</span>
+              <span><i className="no-one-off" /> No one off</span>
+            </div>
+          </section>
+
           <aside className="diary-side-panel">
             <h2>
               {selectedDates.length === 1

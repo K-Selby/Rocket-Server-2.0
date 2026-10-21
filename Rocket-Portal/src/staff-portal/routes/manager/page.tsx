@@ -23,11 +23,48 @@ type ManagedStaff = CurrentUser & {
   activeOnRota: boolean;
 };
 
+type NotificationTestType =
+  | "ROTA_PUBLISHED"
+  | "SHIFT_REQUEST"
+  | "SHIFT_MANAGER_APPROVAL"
+  | "SHIFT_APPROVED"
+  | "SHIFT_DECLINED"
+  | "DAY_OFF_SUMMARY"
+  | "DAY_OFF_APPROVED"
+  | "DAY_OFF_DECLINED";
+
+const notificationTests: Array<{
+  value: NotificationTestType;
+  label: string;
+  title: string;
+  message: string;
+  action: string;
+}> = [
+  { value: "ROTA_PUBLISHED", label: "Rota published", title: "Your rota has been published", message: "The rota for the selected week has been published. Your shifts are shown below.", action: "View full rota or request cover" },
+  { value: "SHIFT_REQUEST", label: "Shift cover request", title: "New shift cover request", message: "Alex has asked you to cover the following shift.", action: "Review shift cover request" },
+  { value: "SHIFT_MANAGER_APPROVAL", label: "Shift cover awaiting manager approval", title: "Shift cover needs approval", message: "A shift cover has been accepted and is waiting for manager approval.", action: "Review and approve" },
+  { value: "SHIFT_APPROVED", label: "Shift cover approved", title: "Shift cover approved", message: "The shift cover has been approved by a manager. The rota has been updated.", action: "View updated rota" },
+  { value: "SHIFT_DECLINED", label: "Shift cover declined", title: "Shift cover declined", message: "The shift cover request was declined. The original shift remains on the rota.", action: "View rota" },
+  { value: "DAY_OFF_SUMMARY", label: "Daily day-off request summary", title: "3 day-off requests waiting", message: "There are 3 day-off requests waiting for manager review.", action: "Review day-off requests" },
+  { value: "DAY_OFF_APPROVED", label: "Day-off request approved", title: "Day-off request approved", message: "Your day-off request has been approved.", action: "View request" },
+  { value: "DAY_OFF_DECLINED", label: "Day-off request declined", title: "Day-off request declined", message: "Your day-off request has been declined. Open the request to view its details.", action: "View request" },
+];
+
+function currentWeekStart() {
+  const today = new Date();
+  today.setDate(today.getDate() - today.getDay());
+  return [
+    today.getFullYear(),
+    String(today.getMonth() + 1).padStart(2, "0"),
+    String(today.getDate()).padStart(2, "0"),
+  ].join("-");
+}
+
 export default function ManagerPage() {
   const router = useRouter();
   const { currentUser, loadingUser, userError } = useCurrentUser();
 
-  const [tab, setTab] = useState<"staff" | "settings">("staff");
+  const [tab, setTab] = useState<"staff" | "notifications" | "settings">("staff");
   const [staff, setStaff] = useState<ManagedStaff[]>([]);
 
   const [showAddStaff, setShowAddStaff] = useState(false);
@@ -40,6 +77,11 @@ export default function ManagerPage() {
   const [saving, setSaving] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
   const [resettingPasswordId, setResettingPasswordId] = useState<number | null>(null);
+  const [savingNotificationId, setSavingNotificationId] = useState<number | null>(null);
+  const [testRecipientId, setTestRecipientId] = useState("");
+  const [testNotificationType, setTestNotificationType] = useState<NotificationTestType>("ROTA_PUBLISHED");
+  const [testWeekStart, setTestWeekStart] = useState(currentWeekStart);
+  const [sendingTest, setSendingTest] = useState(false);
 
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -275,6 +317,25 @@ export default function ManagerPage() {
     }
   }
 
+  async function handleStaffNotifications(staffMember: ManagedStaff, enabled: boolean) {
+    if (!currentUser || savingNotificationId !== null) return;
+    setSavingNotificationId(staffMember.id);
+    setError("");
+    setNotice("");
+    try {
+      const response = await fetch(`${API_URL}/api/staff/${staffMember.id}/notifications`, {
+        method: "PUT", credentials: "include", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notificationsEnabled: enabled }),
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(data?.message || "Could not update notifications.");
+      setStaff(current => current.map(member => member.id === data.id ? data : member));
+      setNotice(`${staffMember.name}'s notifications are now ${enabled ? "on" : "off"}.`);
+    } catch (notificationError) {
+      setError(notificationError instanceof Error ? notificationError.message : "Could not update notifications.");
+    } finally { setSavingNotificationId(null); }
+  }
+
   async function handleDelete(staffMember: ManagedStaff) {
     if (!currentUser || staffMember.role === "ADMIN") return;
 
@@ -396,6 +457,40 @@ export default function ManagerPage() {
     }
   }
 
+  async function sendNotificationTest(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!testRecipientId || !testWeekStart || sendingTest) return;
+
+    setSendingTest(true);
+    setError("");
+    setNotice("");
+
+    try {
+      const response = await fetch(`${API_URL}/api/email/test`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          staffMemberId: Number(testRecipientId),
+          notificationType: testNotificationType,
+          weekStart: testWeekStart,
+        }),
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(data?.message || "Could not send the test rota notification.");
+      }
+
+      const recipient = staff.find(member => member.id === Number(testRecipientId));
+      const testName = notificationTests.find(test => test.value === testNotificationType)?.label;
+      setNotice(`${testName || "Test notification"} sent to ${recipient?.email || "the selected email"}.`);
+    } catch (sendError) {
+      setError(sendError instanceof Error ? sendError.message : "Could not send the test rota notification.");
+    } finally {
+      setSendingTest(false);
+    }
+  }
+
   if (!loadingUser && !currentUser) {
     return (
       <main className="page-content">
@@ -437,7 +532,7 @@ export default function ManagerPage() {
       </div>
       {currentUser.role === "ADMIN" && <RocketEmailCard />}
       <nav
-        className="inbox-kinds"
+        className={`inbox-kinds manager-tabs ${currentUser.role === "ADMIN" ? "has-notification-tab" : ""}`}
         aria-label="Manager section"
       >
         <button
@@ -446,6 +541,15 @@ export default function ManagerPage() {
         >
           Staff
         </button>
+
+        {currentUser.role === "ADMIN" && (
+          <button
+            aria-pressed={tab === "notifications"}
+            onClick={() => setTab("notifications")}
+          >
+            Notifications
+          </button>
+        )}
 
         <button
           aria-pressed={tab === "settings"}
@@ -604,6 +708,16 @@ export default function ManagerPage() {
                           : "Staff"}
                     </span>
 
+                    <label className="staff-notification-toggle" title={`${staffMember.name} email notifications`}>
+                      <span>{staffMember.notificationsEnabled ? "Notifications on" : "Notifications off"}</span>
+                      <span className="setting-switch">
+                        <input type="checkbox" checked={staffMember.notificationsEnabled}
+                          disabled={savingNotificationId !== null || !staffMember.emailVerified}
+                          onChange={event => handleStaffNotifications(staffMember, event.target.checked)} />
+                        <span className="setting-switch-track" aria-hidden="true" />
+                      </span>
+                    </label>
+
                     {!isAdmin && (
                       <button
                         type="button"
@@ -703,6 +817,119 @@ export default function ManagerPage() {
             })}
           </div>
         </section>
+      ) : tab === "notifications" ? (
+        <section className="manager-section">
+          <div className="manager-section-header">
+            <div>
+              <h2>Notifications</h2>
+              <p>Preview and send test staff email notifications.</p>
+            </div>
+          </div>
+
+          <div className="notification-test-layout">
+            <form className="notification-test-form" onSubmit={sendNotificationTest}>
+              <div>
+                <span className="notification-test-label">Email preview</span>
+                <h3>Send a test notification</h3>
+                <p>
+                  Choose a notification and a verified staff email. Test messages are clearly
+                  marked as tests and do not change any requests or rota information.
+                </p>
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="notification-type">Notification</label>
+                <select
+                  id="notification-type"
+                  value={testNotificationType}
+                  onChange={event => setTestNotificationType(event.target.value as NotificationTestType)}
+                >
+                  {notificationTests.map(test => (
+                    <option key={test.value} value={test.value}>{test.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="notification-recipient">Send test to</label>
+                <select
+                  id="notification-recipient"
+                  value={testRecipientId}
+                  onChange={event => setTestRecipientId(event.target.value)}
+                  required
+                >
+                  <option value="">Choose a verified staff email</option>
+                  {sortedStaff
+                    .filter(member => member.emailVerified && member.email)
+                    .map(member => (
+                      <option key={member.id} value={member.id}>
+                        {member.name} — {member.email}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="notification-week">Example week beginning</label>
+                <input
+                  id="notification-week"
+                  type="date"
+                  value={testWeekStart}
+                  onChange={event => setTestWeekStart(event.target.value)}
+                  required
+                />
+                <small>The rota test uses saved shifts. Other tests use example dates from this week.</small>
+              </div>
+
+              <button className="primary-button" type="submit" disabled={sendingTest}>
+                {sendingTest ? "Sending test..." : "Send test notification"}
+              </button>
+            </form>
+
+            <article className="notification-email-preview" aria-label="Rota email preview">
+              <div className="notification-preview-brand">The Rocket Pub</div>
+              <h3>{notificationTests.find(test => test.value === testNotificationType)?.title}</h3>
+              <p>Hi {staff.find(member => member.id === Number(testRecipientId))?.name || "XXX"},</p>
+              <p>
+                {notificationTests.find(test => test.value === testNotificationType)?.message}
+              </p>
+              <div className="notification-preview-shifts">
+                {testNotificationType === "ROTA_PUBLISHED" ? (
+                  <>
+                    <div><strong>Monday XX</strong><span>5 - F</span></div>
+                    <div><strong>Tuesday XX</strong><span>3 - 9</span></div>
+                    <div><strong>Thursday XX</strong><span>6 - F</span></div>
+                    <div><strong>Saturday XX</strong><span>4 - 8</span></div>
+                  </>
+                ) : testNotificationType === "DAY_OFF_SUMMARY" ? (
+                  <div><strong>Outstanding requests</strong><span>3</span></div>
+                ) : testNotificationType === "DAY_OFF_APPROVED" ? (
+                  <div className="notification-preview-days">
+                    <strong>Day requested</strong>
+                    <ul><li>Friday XX</li></ul>
+                  </div>
+                ) : testNotificationType === "DAY_OFF_DECLINED" ? (
+                  <div className="notification-preview-days">
+                    <strong>Days requested</strong>
+                    <ul>
+                      <li>Friday XX</li>
+                      <li>Sunday XX – Monday XX</li>
+                    </ul>
+                  </div>
+                ) : (
+                  <>
+                    {testNotificationType === "SHIFT_MANAGER_APPROVAL" && <div><strong>From / covering</strong><span>Alex / Jamie</span></div>}
+                    <div><strong>Date</strong><span>Monday XX</span></div>
+                    <div><strong>Shift</strong><span>5 - F</span></div>
+                  </>
+                )}
+              </div>
+              <span className="notification-preview-link">
+                {notificationTests.find(test => test.value === testNotificationType)?.action}
+              </span>
+            </article>
+          </div>
+        </section>
       ) : (
         <section className="manager-section">
           <div className="manager-section-header">
@@ -717,34 +944,39 @@ export default function ManagerPage() {
           {!settings ? (
             <p>Loading settings...</p>
           ) : (
-            <>
-            <label className="checkbox-label">
-              <input type="checkbox" checked={settings.notificationsEnabled} disabled={savingSettings} onChange={event => updateManagerApproval(event.target.checked, true)} />
-              <span><strong>Enable staff notifications</strong><br />Turn email notifications on or off for everyone.</span>
-            </label>
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={
-                  settings.requireManagerShiftSwapApproval
-                }
-                disabled={savingSettings}
-                onChange={event =>
-                  updateManagerApproval(
-                    event.target.checked
-                  )
-                }
-              />
+            <div className="staff-settings-list">
+              <label className="staff-setting-row">
+                <span className="staff-setting-copy">
+                  <strong>Email notifications</strong>
+                  <span>Allow notification emails to be sent to staff with verified email addresses.</span>
+                </span>
+                <span className="setting-switch">
+                  <input
+                    type="checkbox"
+                    checked={settings.notificationsEnabled}
+                    disabled={savingSettings}
+                    onChange={event => updateManagerApproval(event.target.checked, true)}
+                  />
+                  <span className="setting-switch-track" aria-hidden="true" />
+                </span>
+              </label>
 
-              <span>
-                <strong>
-                  Require managers to approve shift covers
-                </strong>
-                <br />
-                Staff must still accept the cover first. The rota only changes after a Manager approves it.
-              </span>
-            </label>
-            </>
+              <label className="staff-setting-row">
+                <span className="staff-setting-copy">
+                  <strong>Manager approval for shift covers</strong>
+                  <span>Staff accept the cover first. The rota changes only after a manager approves it.</span>
+                </span>
+                <span className="setting-switch">
+                  <input
+                    type="checkbox"
+                    checked={settings.requireManagerShiftSwapApproval}
+                    disabled={savingSettings}
+                    onChange={event => updateManagerApproval(event.target.checked)}
+                  />
+                  <span className="setting-switch-track" aria-hidden="true" />
+                </span>
+              </label>
+            </div>
           )}
         </section>
       )}

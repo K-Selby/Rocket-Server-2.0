@@ -122,6 +122,12 @@ public class StaffMemberService {
         return staffMemberRepository.save(existing);
     }
 
+    public StaffMember updateNotifications(Long id, boolean enabled) {
+        StaffMember staffMember = getStaffMember(id);
+        staffMember.setNotificationsEnabled(enabled);
+        return staffMemberRepository.save(staffMember);
+    }
+
     // Deactivates the account without destroying historical records.
     public StaffMember deactivateStaffMember(Long id) {
         StaffMember staffMember = getStaffMember(id);

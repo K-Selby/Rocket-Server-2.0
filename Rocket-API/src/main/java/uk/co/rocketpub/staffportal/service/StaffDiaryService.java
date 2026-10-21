@@ -150,7 +150,10 @@ public class StaffDiaryService {
         }
 
         diaryRepository.saveAll(entries);
-        notifications.requestDecision(selectedEntry.getStaffMember(), "day-off request", true);
+        notifications.requestDecision(
+                selectedEntry.getStaffMember(),
+                entries.stream().map(StaffDiaryEntry::getEntryDate).toList(),
+                true);
 
         return selectedEntry;
     }
@@ -183,7 +186,10 @@ public class StaffDiaryService {
         }
 
         diaryRepository.saveAll(entries);
-        notifications.requestDecision(selectedEntry.getStaffMember(), "day-off request", false);
+        notifications.requestDecision(
+                selectedEntry.getStaffMember(),
+                entries.stream().map(StaffDiaryEntry::getEntryDate).toList(),
+                false);
     }
 
     /*

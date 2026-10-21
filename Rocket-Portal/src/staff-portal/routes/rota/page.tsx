@@ -391,6 +391,11 @@ export default function RotaPage() {
     useState("");
 
   const [
+    editingShiftId,
+    setEditingShiftId,
+  ] = useState<number | null>(null);
+
+  const [
     staffMenu,
     setStaffMenu,
   ] =
@@ -523,16 +528,16 @@ export default function RotaPage() {
 
   const rotaStaff = staff;
 
-  const visibleStaff =
-    rotaStaff.filter(
-      member =>
-        member.activeOnRota
-    );
+  const visibleStaff = rotaStaff.filter(member => {
+    if (!week) return member.activeOnRota;
+    if (week.editing) return !week.hiddenStaffIds.includes(member.id) && member.activeOnRota;
+    return member.activeOnRota || shifts.some(shift => shift.staffMember.id === member.id);
+  });
 
   const hiddenStaff =
     rotaStaff.filter(
       member =>
-        !member.activeOnRota
+        !visibleStaff.some(visible => visible.id === member.id)
     );
 
   const coverTargets =
@@ -697,18 +702,12 @@ export default function RotaPage() {
     weekStart,
   ]);
 
-  function findShift(
-    staffId: number,
-    date: string
-  ) {
-    return shifts.find(
-      shift =>
-        shift.staffMember.id ===
-        staffId &&
-        shift.shiftDate ===
-        date
-    );
+  function findShifts(staffId: number, date: string) {
+    return shifts
+      .filter(shift => shift.staffMember.id === staffId && shift.shiftDate === date)
+      .sort((first, second) => (first.startTime ?? "").localeCompare(second.startTime ?? ""));
   }
+
 
   function findAvailability(
     staffId: number,
@@ -1076,11 +1075,8 @@ export default function RotaPage() {
               dayWidth *
               dayIndex;
 
-            const shift =
-              findShift(
-                member.id,
-                day
-              );
+            const dayShifts = findShifts(member.id, day);
+            const shift = dayShifts[0];
 
             const dayOff =
               isApprovedDayOff(
@@ -1169,9 +1165,7 @@ export default function RotaPage() {
             }
 
             drawCentredText(
-              formatShift(
-                shift
-              ),
+              dayShifts.map(formatShift).join(" / "),
               x,
               y,
               dayWidth,
@@ -1280,12 +1274,8 @@ export default function RotaPage() {
       return;
     }
 
-    setEditingCell(
-      cellKey(
-        member.id,
-        date
-      )
-    );
+    setEditingCell(cellKey(member.id, date));
+    setEditingShiftId(shift?.id ?? null);
 
     setEditValue(
       formatShift(
@@ -1298,6 +1288,7 @@ export default function RotaPage() {
 
   function closeCell() {
     setEditingCell(null);
+    setEditingShiftId(null);
     setEditValue("");
   }
 
@@ -2236,7 +2227,13 @@ export default function RotaPage() {
                             member.id
                           }
                         >
-                          <th>
+                          <th
+                            className={
+                              staffMenu === member.id
+                                ? "rota-staff-cell-menu-open"
+                                : undefined
+                            }
+                          >
                             <div className="rota-staff-name">
                               <span>
                                 {
@@ -2282,11 +2279,10 @@ export default function RotaPage() {
 
                           {weekDays.map(
                             day => {
-                              const shift =
-                                findShift(
-                                  member.id,
-                                  day
-                                );
+                              const cellShifts = findShifts(member.id, day);
+                              const shift = editingShiftId === null
+                                ? undefined
+                                : cellShifts.find(item => item.id === editingShiftId);
 
                               const dayOff =
                                 isApprovedDayOff(
@@ -2296,7 +2292,7 @@ export default function RotaPage() {
 
                               const availability =
                                 isEditing &&
-                                  !shift &&
+                                  cellShifts.length === 0 &&
                                   !dayOff
                                   ? findAvailability(
                                     member.id,
@@ -2314,16 +2310,10 @@ export default function RotaPage() {
                                 editingCell ===
                                 key;
 
-                              const ownPublishedShift =
-                                Boolean(
-                                  shift &&
-                                  week.published &&
-                                  !week.editing &&
-                                  shift.staffMember.id ===
-                                  currentUser.id &&
-                                  shift.shiftDate >=
-                                  today
-                                );
+                              const ownPublishedShifts = cellShifts.filter(item =>
+                                week.published && !week.editing &&
+                                item.staffMember.id === currentUser.id && item.shiftDate >= today
+                              );
 
                               if (
                                 dayOff
@@ -2493,53 +2483,36 @@ export default function RotaPage() {
                                       )}
                                     </div>
                                   ) : (
-                                    <button
-                                      className={`rota-cell-button ${ownPublishedShift
-                                          ? "rota-own-shift"
-                                          : ""
-                                        }`}
-                                      disabled={
-                                        !isEditing &&
-                                        !ownPublishedShift
-                                      }
-                                      onClick={() => {
-                                        if (
-                                          isEditing
-                                        ) {
-                                          openCell(
-                                            member,
-                                            day,
-                                            shift
-                                          );
+                                    <div
+                                      className={`rota-cell-shifts ${isEditing ? "rota-cell-addable" : ""}`}
+                                      role={isEditing ? "button" : undefined}
+                                      tabIndex={isEditing ? 0 : undefined}
+                                      aria-label={isEditing ? (cellShifts.length ? "Add split shift" : "Add shift") : undefined}
+                                      onClick={() => isEditing && openCell(member, day)}
+                                      onKeyDown={event => {
+                                        if (isEditing && (event.key === "Enter" || event.key === " ")) {
+                                          event.preventDefault();
+                                          openCell(member, day);
                                         }
                                       }}
                                     >
-                                      {shift && (
-                                        <span className="rota-shift-badge">
-                                          {formatShift(
-                                            shift
-                                          )}
-                                        </span>
-                                      )}
-
-                                      {ownPublishedShift &&
-                                        shift && (
-                                          <span
-                                            className="rota-swap-hover"
-                                            onClick={
-                                              event => {
-                                                event.stopPropagation();
-
-                                                openSwap(
-                                                  shift
-                                                );
-                                              }
-                                            }
-                                          >
-                                            Cover shift
-                                          </span>
-                                        )}
-                                    </button>
+                                      {cellShifts.map(item => (
+                                        <button
+                                          type="button"
+                                          key={item.id}
+                                          className={`rota-shift-entry ${ownPublishedShifts.some(own => own.id === item.id) ? "rota-own-shift" : ""}`}
+                                          onClick={event => {
+                                            event.stopPropagation();
+                                            if (isEditing) openCell(member, day, item);
+                                            else openSwap(item);
+                                          }}
+                                          disabled={!isEditing && !ownPublishedShifts.some(own => own.id === item.id)}
+                                        >
+                                          <span className="rota-shift-badge">{formatShift(item)}</span>
+                                          {ownPublishedShifts.some(own => own.id === item.id) && <span className="rota-swap-hover">Cover shift</span>}
+                                        </button>
+                                      ))}
+                                    </div>
                                   )}
                                 </td>
                               );
@@ -2552,37 +2525,52 @@ export default function RotaPage() {
                 </table>
               </div>
 
-              <div className="rota-mobile-week" aria-label="Compact weekly rota">
+              <div className="rota-mobile-week" aria-label="Weekly rota by day">
                 {weekDays.map(day => {
                   const dayEntries = visibleStaff
-                    .map(member => ({
-                      member,
-                      shift: findShift(member.id, day),
-                      dayOff: isApprovedDayOff(member.id, day),
-                    }))
-                    .filter(entry => entry.shift || entry.dayOff);
+                    .flatMap(member => findShifts(member.id, day).map(shift => ({ member, shift })));
+
+                  const ownShifts = dayEntries
+                    .filter(entry =>
+                      entry.member.id === currentUser.id && week.published &&
+                      !week.editing && entry.shift.shiftDate >= today
+                    )
+                    .map(entry => entry.shift);
 
                   return (
-                    <section className="rota-mobile-day" key={day}>
+                    <section className={`rota-mobile-day ${ownShifts.length ? "rota-mobile-own-day" : ""}`} key={day}>
                       <header>
                         <strong>{formatDayName(day)}</strong>
                         <span>{formatDayDate(day)}</span>
                       </header>
-                      <div>
+
+                      <div className="rota-mobile-shifts">
                         {dayEntries.length === 0 ? (
-                          <p>No shifts</p>
-                        ) : dayEntries.map(({ member, shift, dayOff }) => (
+                          <p>No one working</p>
+                        ) : dayEntries.map(({ member, shift }) => (
                           <button
                             type="button"
-                            key={member.id}
-                            disabled={!isEditing || dayOff}
-                            onClick={() => shift && openCell(member, day, shift)}
+                            className={member.id === currentUser.id ? "rota-mobile-own-shift" : ""}
+                            key={shift.id}
+                            disabled={!isEditing}
+                            onClick={() => shift && isEditing && openCell(member, day, shift)}
                           >
                             <span>{member.name}</span>
-                            <strong>{dayOff ? "/" : formatShift(shift)}</strong>
+                            <strong>{formatShift(shift)}</strong>
                           </button>
                         ))}
                       </div>
+
+                      {ownShifts.map(ownShift => (
+                        <button
+                          type="button"
+                          className="rota-mobile-cover-button"
+                          key={`cover-${ownShift.id}`}
+                          onClick={() => openSwap(ownShift)}
+                        >
+                          Request cover for {formatShift(ownShift)}
+                        </button>
+                      ))}
                     </section>
                   );
                 })}
