@@ -15,8 +15,11 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.json.JsonMapper;
@@ -24,6 +27,7 @@ import jakarta.servlet.http.HttpSession;
 
 @Service
 public class RocketEmailService {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RocketEmailService.class);
     private static final String AUTHORITY = "https://login.microsoftonline.com/consumers/oauth2/v2.0";
     private static final String SCOPE = "offline_access Mail.Send";
     private static final String FLOW = "rocketMicrosoftEmailFlow";
@@ -85,12 +89,26 @@ public class RocketEmailService {
 
         String failure = frontendUrl + "/manager?email=connection-failed";
 
-        if (!(stored instanceof Flow flow)
-                || !flow.state().equals(state)
-                || flow.expiresAt().isBefore(Instant.now())
-                || flow.version() != connectionVersion
-                || code == null
-                || code.isBlank()) return failure;
+        if (!(stored instanceof Flow flow)) {
+            LOGGER.warn("Microsoft email callback failed because its login session was not found.");
+            return failure;
+        }
+        if (!flow.state().equals(state)) {
+            LOGGER.warn("Microsoft email callback failed because its state did not match the login session.");
+            return failure;
+        }
+        if (flow.expiresAt().isBefore(Instant.now())) {
+            LOGGER.warn("Microsoft email callback failed because the login attempt expired.");
+            return failure;
+        }
+        if (flow.version() != connectionVersion) {
+            LOGGER.warn("Microsoft email callback failed because the connection changed during login.");
+            return failure;
+        }
+        if (code == null || code.isBlank()) {
+            LOGGER.warn("Microsoft email callback did not contain an authorization code.");
+            return failure;
+        }
 
         try {
             Map<String, Object> result = requestToken(Map.of(
@@ -108,8 +126,10 @@ public class RocketEmailService {
             return frontendUrl + "/manager?email=connected";
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
+            LOGGER.warn("Microsoft email connection was interrupted.");
             return failure;
         } catch (IOException | RuntimeException exception) {
+            LOGGER.error("Microsoft email connection failed: {}", exception.getMessage());
             return failure;
         }
     }
@@ -226,7 +246,21 @@ public class RocketEmailService {
                 .build();
 
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        if (response.statusCode() != 200) throw new IllegalStateException("Microsoft authentication failed.");
+        if (response.statusCode() != 200) {
+            String diagnostic = response.body();
+            try {
+                Map<String, Object> error = mapper.readValue(response.body(), new TypeReference<>() {});
+                String code = value(error, "error");
+                String description = value(error, "error_description");
+                diagnostic = Stream.of(code, description)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.joining(": "));
+            } catch (RuntimeException ignored) {
+                /* Fall back to Microsoft's response body. */
+            }
+            LOGGER.error("Microsoft token request failed with HTTP {}: {}", response.statusCode(), diagnostic);
+            throw new IllegalStateException("Microsoft authentication failed. See the server log for details.");
+        }
 
         return mapper.readValue(response.body(), new TypeReference<>() {});
     }
