@@ -10,6 +10,7 @@ import RocketLogo from "./RocketBrand";
 const API = "";
 const STAFF_PORTAL = "/staff";
 const BOOKING_PORTAL = "/booking";
+const CUSTOMER_PORTAL = "/";
 
 function staffPortalUrl(path: string) {
   return `${STAFF_PORTAL}${path}`;
@@ -27,6 +28,7 @@ function NavIcon({ name }: { name: string }) {
     diary: <><path d="M6 3h12a2 2 0 0 1 2 2v16H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" /><path d="M8 3v18M11 8h5M11 12h5M11 16h3" /></>,
     inbox: <><path d="M4 5h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z" /><path d="m2 7 10 7L22 7" /></>,
     manager: <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></>,
+    editor: <><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M7 8h10M7 12h7M7 16h4" /></>,
     external: <><path d="M15 3h6v6M10 14 21 3" /><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /></>,
   };
 
@@ -57,7 +59,7 @@ export default function Navigation() {
   const [loggingOut, setLoggingOut] = useState(false);
 
   const canManage = currentUser?.role === "MANAGER" || currentUser?.role === "ADMIN";
-  const visibleLinks = canManage ? [...links, { href: "/manager", label: "Manager", icon: "manager" }] : links;
+  const visibleLinks = canManage ? [...links, { href: "/manager", label: "Manager", icon: "manager" }, { href: "/customer-portal-editor", label: "Customer Portal Editor", icon: "editor" }] : links;
 
   function toggleDesktopSidebar() {
     setSidebarCollapsed(current => !current);
@@ -180,6 +182,11 @@ export default function Navigation() {
         </nav>
 
         <div className="sidebar-bottom">
+          <a href={CUSTOMER_PORTAL} aria-label="Customer Portal">
+            <NavIcon name="external" />
+            <span className="sidebar-link-label">Customer Portal</span>
+            <span className="sidebar-link-label" aria-hidden="true">→</span>
+          </a>
           <a href={BOOKING_PORTAL} aria-label="Booking Portal">
             <NavIcon name="external" />
             <span className="sidebar-link-label">Booking Portal</span>
@@ -198,7 +205,7 @@ export default function Navigation() {
       )}
 
       <nav className="mobile-bottom-nav">
-        {[...visibleLinks, { href: "/settings", label: "Account" }].map(link => (
+        {[...visibleLinks.filter(link => link.href !== "/customer-portal-editor"), { href: "/settings", label: "Account" }].map(link => (
           <Link key={link.href} href={staffPortalUrl(link.href)} className={staffPath === link.href ? "active" : ""}>
             {link.label === "Staff Diary" ? "Diary" : link.label}
             {link.href === "/inbox" && badge}

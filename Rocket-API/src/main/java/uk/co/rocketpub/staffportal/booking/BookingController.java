@@ -200,6 +200,7 @@ public class BookingController {
     }
 
     private void validate(BookingRequest r,Long existing,List<Long> tableIds) {
+        CustomerBlacklist.check(jdbc,r.customerPhone());
         if(r.customerName()==null||r.customerName().isBlank()||r.customerPhone()==null||r.customerPhone().replaceAll("\\D","").isBlank()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Customer name and phone number are required.");
         if(r.partySize()<1||r.partySize()>20) throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Bookings can be for 1 to 20 people.");
         if(r.numberOfChildren()<0||r.numberOfChildren()>r.partySize()||r.highChairsRequired()<0||r.highChairsRequired()>r.partySize()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Children and high chairs cannot exceed the party size.");

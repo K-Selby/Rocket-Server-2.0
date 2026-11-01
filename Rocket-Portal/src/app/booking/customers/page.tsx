@@ -1,1 +1,2 @@
-export { default } from "@/booking-portal/routes/customers/page";
+import { redirect } from "next/navigation";
+export default function CustomersRedirect() { redirect("/booking/archive?area=customers"); }

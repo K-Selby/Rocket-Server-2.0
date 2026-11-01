@@ -3,20 +3,71 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import styles from "./customer.module.css";
+import { PortalIcon } from "./PortalIcon";
+import { CallToBook } from "./CallToBook";
 
-const links = [
-  { href: "/", label: "Home", icon: "⌂" },
-  { href: "/customer/food-menu", label: "Food Menu", icon: "▤" },
-  { href: "/customer/christmas-menu", label: "Christmas Menu", icon: "★" },
-  { href: "/customer/allergens", label: "Allergens", icon: "A" },
-  { href: "/staff/login", label: "Staff Login", icon: "→" },
+type CustomerMenu = {
+  id: number;
+  slug: string;
+  title: string;
+  description: string | null;
+  primary: boolean;
+  sidebarName: string;
+  icon: string;
+  cardColor: string;
+  textColor: string;
+  pdfUrl: string;
+};
+
+type PortalButton = { key: string; title: string; description: string; sidebarName: string; icon: string; cardColor: string; textColor: string };
+const defaultAllergens: PortalButton = { key: "allergens", title: "Allergen Menu", description: "Search dishes and check allergen information.", sidebarName: "Allergens", icon: "material:allergy", cardColor: "#ffffff", textColor: "#173326" };
+
+const defaultMenus: CustomerMenu[] = [
+  { id: -1, slug: "food", title: "View Food Menu", sidebarName: "Food Menu", icon: "pdf", description: "Open our current food menu.", primary: true, cardColor: "#ffffff", textColor: "#173326", pdfUrl: "/assets/menus/the-rocket-pub-food-menu.pdf" },
+  { id: -2, slug: "christmas", title: "View Our Christmas Menu 🎄", sidebarName: "Christmas Menu", icon: "star", description: "Prebook your Christmas dinner with us", primary: false, cardColor: "#7f202a", textColor: "#fffaf0", pdfUrl: "/assets/menus/rocket-christmas-menu.pdf" },
 ];
+
+const baseLinks = [
+  { href: "/", label: "Home", icon: "material:home" },
+];
+
+function useCustomerMenus() {
+  const [menus, setMenus] = useState<CustomerMenu[]>(defaultMenus);
+  useEffect(() => {
+    let active = true;
+    fetch("/api/customer/menus", { cache: "no-store" })
+      .then(response => response.ok ? response.json() : Promise.reject())
+      .then(result => { if (active && result.length) setMenus(result); })
+      .catch(() => { /* Keep the built-in menus visible while the API restarts. */ });
+    return () => { active = false; };
+  }, []);
+  return menus;
+}
+
+function useAllergenButton() {
+  const [button, setButton] = useState(defaultAllergens);
+  useEffect(() => {
+    let active = true;
+    fetch("/api/customer/portal-buttons", { cache: "no-store" }).then(response => response.ok ? response.json() : Promise.reject())
+      .then(result => { const allergens = result.find((item: PortalButton) => item.key === "allergens"); if (active && allergens) setButton(allergens); })
+      .catch(() => {});
+    return () => { active = false; };
+  }, []);
+  return button;
+}
 
 export function CustomerNavigation() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const menus = useCustomerMenus();
+  const allergens = useAllergenButton();
+  const links = [
+    ...baseLinks,
+    ...menus.map(menu => ({ href: menu.pdfUrl, label: menu.sidebarName, icon: menu.icon })),
+    { href: "/customer/allergens", label: allergens.sidebarName, icon: allergens.icon },
+  ];
 
   return (
     <>
@@ -45,11 +96,18 @@ export function CustomerNavigation() {
         <nav className={styles.links}>
           {links.map(link => (
             <Link key={link.href} href={link.href} className={pathname === link.href || (link.href === "/" && pathname === "/customer") ? styles.active : ""} onClick={() => setOpen(false)}>
-              <span className={styles.icon} aria-hidden="true">{link.icon}</span>
+              <span className={styles.icon}><PortalIcon value={link.icon} monochrome /></span>
               <span className={styles.linkText}>{link.label}</span>
             </Link>
           ))}
         </nav>
+
+        <div className={styles.sidebarFooter}>
+          <Link href="/staff/login" onClick={() => setOpen(false)}>
+            <span className={styles.icon} aria-hidden="true">→</span>
+            <span className={styles.linkText}>Staff Login</span>
+          </Link>
+        </div>
       </aside>
 
       {open && <button className={styles.backdrop} type="button" aria-label="Close navigation" onClick={() => setOpen(false)} />}
@@ -58,6 +116,26 @@ export function CustomerNavigation() {
 }
 
 export default function CustomerPortalHome() {
+  const menus = useCustomerMenus();
+  const allergens = useAllergenButton();
+  const christmasMenus = menus.filter(menu => menu.slug === "christmas");
+  const standardMenus = menus.filter(menu => menu.slug !== "christmas");
+  const primaryMenu = standardMenus.find(menu => menu.primary) || standardMenus[0];
+  const additionalMenus = standardMenus.filter(menu => menu.id !== primaryMenu?.id);
+
+  const menuCard = (menu: CustomerMenu) => (
+    <Link
+      className={`${styles.card} ${menu.slug === "christmas" ? styles.christmasCard : ""}`}
+      href={menu.pdfUrl}
+      key={menu.id}
+      style={{ backgroundColor: menu.cardColor, color: menu.textColor }}
+    >
+      <span className={styles.cardIcon}><PortalIcon value={menu.icon} /></span>
+      <span><strong>{menu.title}</strong><small>{menu.description || "Open the current menu."}</small></span>
+      <span className={styles.arrow} aria-hidden="true">→</span>
+    </Link>
+  );
+
   return (
     <div className={styles.shell}>
       <CustomerNavigation />
@@ -80,38 +158,18 @@ export default function CustomerPortalHome() {
             </div>
           </section>
 
-          <a className={styles.callButton} href="tel:+441512594694">
-            <span className={styles.callIcon} aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.69 2.8a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.33 1.84.56 2.8.69A2 2 0 0 1 22 16.92Z" />
-              </svg>
-            </span>
-            <span>
-              <strong>Book your table with us</strong>
-              <small>Call 0151 259 4694</small>
-            </span>
-          </a>
+          <CallToBook className={styles.callButton} iconClassName={styles.callIcon} />
 
 
           <section className={styles.cards} aria-label="Customer options">
-            <Link className={styles.card} href="/customer/food-menu">
-              <span className={styles.cardIcon}>PDF</span>
-              <span><strong>View Food Menu</strong><small>Open our current food menu.</small></span>
+            {primaryMenu && menuCard(primaryMenu)}
+            <Link className={styles.card} href="/customer/allergens" style={{ backgroundColor: allergens.cardColor, color: allergens.textColor }}>
+              <span className={styles.cardIcon}><PortalIcon value={allergens.icon} /></span>
+              <span><strong>{allergens.title}</strong><small>{allergens.description}</small></span>
               <span className={styles.arrow} aria-hidden="true">→</span>
             </Link>
-            <Link className={styles.card} href="/customer/allergens">
-              <span className={styles.cardIcon}>A</span>
-              <span><strong>Allergen Menu</strong><small>Search dishes and check allergen information.</small></span>
-              <span className={styles.arrow} aria-hidden="true">→</span>
-            </Link>
-            <Link className={`${styles.card} ${styles.christmasCard}`} href="/customer/christmas-menu">
-              <span className={styles.cardIcon} aria-hidden="true">★</span>
-              <span>
-                <strong>View Our Christmas Menu 🎄</strong>
-                <small>Prebook your Christmas dinner with us</small>
-              </span>
-              <span className={styles.arrow} aria-hidden="true">→</span>
-            </Link>
+            {additionalMenus.map(menuCard)}
+            {christmasMenus.map(menuCard)}
           </section>
         </div>
       </main>

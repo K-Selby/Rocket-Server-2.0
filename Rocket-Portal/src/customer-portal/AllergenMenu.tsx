@@ -4,6 +4,7 @@ import Image from "next/image";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { CustomerNavigation } from "./CustomerPortalHome";
 import styles from "./customer.module.css";
+import { PortalIcon } from "./PortalIcon";
 
 type AllergenStatus = "free" | "contains" | "may_contain";
 
@@ -45,15 +46,11 @@ const emptyFilters: Filters = {
   canMakeVegetarian: false,
 };
 
-function statusClass(status: AllergenStatus) {
-  if (status === "free") return styles.allergenFree;
-  if (status === "contains") return styles.allergenContains;
-  return styles.allergenMay;
-}
+const allergenIcons: Record<string,string> = { Milk: "water_full", Nuts: "peanut", Egg: "egg", Gluten: "grass" };
 
 function AllergenBadge({ label, status }: { label: string; status: AllergenStatus }) {
   const text = status === "free" ? `${label} free` : status === "contains" ? `Contains ${label}` : `May contain ${label}`;
-  return <span className={`${styles.allergenBadge} ${statusClass(status)}`}>{text}</span>;
+  return <span className={`allergen-${status} allergen-icon-pill`} title={text} aria-label={text}><PortalIcon value={`material:${allergenIcons[label]}`}/></span>;
 }
 
 function matchesFreeFilters(item: AllergenSide, filters: Filters) {
@@ -154,17 +151,17 @@ export default function AllergenMenu() {
             <div className={styles.filterActions}><button type="submit">Search / filter</button><button type="button" className={styles.secondaryButton} onClick={clearFilters}>Clear</button></div>
           </form>
 
-          <div className={styles.allergenKey}><span className={styles.allergenFree}>Green = Free</span><span className={styles.allergenMay}>Yellow = May contain</span><span className={styles.allergenContains}>Red = Contains</span></div>
+          <div className="allergen-status-key"><strong>How to read the allergens</strong><div className="allergen-icon-key">{Object.entries(allergenIcons).map(([label,icon])=><span key={label}><PortalIcon value={`material:${icon}`}/><b>{label}</b></span>)}</div><div><span className="allergen-free">✓ Free</span><span className="allergen-may_contain">? May contain</span><span className="allergen-contains">! Contains</span></div></div>
 
           {loading && <div className={styles.statusCard}>Loading allergen menu…</div>}
           {error && <div className={styles.errorCard}>{error}</div>}
-          {!loading && !error && <section className={styles.allergenGrid} aria-live="polite">
+          {!loading && !error && <section className="staff-allergen-grid customer-shared-allergens" aria-live="polite">
             {filteredItems.map(item => {
               const safeSides = item.sides.filter(side => matchesFreeFilters(side, filters));
-              return <article className={styles.allergenCard} key={item.id}>
-                <span className={styles.category}>{item.category}</span><h2>{item.name}</h2>
-                <div className={styles.badgeGrid}><AllergenBadge label="Milk" status={item.milkStatus} /><AllergenBadge label="Nuts" status={item.nutsStatus} /><AllergenBadge label="Egg" status={item.eggStatus} /><AllergenBadge label="Gluten" status={item.glutenStatus} />{item.canMakeGlutenFree && item.glutenStatus !== "free" && <span className={`${styles.allergenBadge} ${styles.canMakeFree}`}>Gluten free*</span>}</div>
-                <div className={styles.vegetarianRow}>{item.vegetarian ? <span className={styles.vegetarianPill}>Vegetarian</span> : item.canMakeVegetarian ? <span className={`${styles.vegetarianPill} ${styles.adaptable}`}>Can be made vegetarian</span> : <span className={styles.muted}>Not marked vegetarian</span>}</div>
+              return <article className="staff-allergen-card" key={item.id}>
+                <span className="booking-page-kicker">{item.category}</span><h2>{item.name}</h2>
+                <div className="staff-allergen-badges"><AllergenBadge label="Milk" status={item.milkStatus} /><AllergenBadge label="Nuts" status={item.nutsStatus} /><AllergenBadge label="Egg" status={item.eggStatus} /><AllergenBadge label="Gluten" status={item.glutenStatus} /></div>
+                <div className="staff-diet-row">{item.vegetarian ? <span>Vegetarian</span> : item.canMakeVegetarian ? <span>Can be made vegetarian</span> : null}{item.canMakeGlutenFree&&<span>Can be gluten free</span>}</div>
                 {item.canMakeGlutenFree && <div className={styles.preparationNote}><strong>*Can be made gluten free when ordered as such.</strong>{item.glutenFreeChanges && <span>{item.glutenFreeChanges}</span>}</div>}
                 {item.category === "Main Meals" && item.sides.length > 0 && <div className={styles.sideBox}><strong>{hasFreeFilter ? "Safer sides for selected allergen filters" : "Available sides"}</strong>{safeSides.length > 0 ? <div className={styles.sideList}>{safeSides.map(side => <span key={side.id}>{side.name}</span>)}</div> : <p>No linked side is strictly free from every selected allergen.</p>}</div>}
                 {item.ingredients && <details className={styles.ingredients}><summary>Main ingredients</summary><p>{item.ingredients.split("\n").filter(Boolean).join(", ")}</p></details>}

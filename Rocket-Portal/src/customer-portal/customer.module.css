@@ -8,12 +8,26 @@
     url("/assets/images/customer-green-wallpaper.png") center / cover no-repeat fixed;
 }
 
+/* Dynamically managed customer PDF menus */
+.pdfMenuPanel { padding: clamp(.7rem,2vw,1.25rem); border: 1px solid rgba(212,222,214,.95); border-radius: 1rem; background: rgba(255,255,255,.9); box-shadow: 0 1rem 2.5rem rgba(3,45,27,.12); }
+.pdfMenuActions { margin-bottom: .8rem; display: flex; justify-content: flex-end; flex-wrap: wrap; gap: .6rem; }
+.pdfMenuActions a { padding: .65rem .9rem; border: 1px solid #176b3a; border-radius: .55rem; background: #176b3a; color: white; font-weight: 750; text-decoration: none; }
+.pdfMenuActions a:last-child { background: white; color: #176b3a; }
+.pdfMenuFrame { width: 100%; height: min(75vh,64rem); min-height: 42rem; display: block; border: 1px solid #d5ded7; border-radius: .65rem; background: #f4f6f4; }
+.menuUnavailable { padding: 2rem; border-radius: .8rem; background: rgba(255,255,255,.9); text-align: center; }
+@media (max-width: 700px) {
+  .pdfMenuFrame { min-height: 31rem; height: 65vh; }
+  .pdfMenuActions a { flex: 1; text-align: center; }
+}
+
 .sidebar {
   position: fixed;
   inset: 0 auto 0 0;
   z-index: 100;
-  width: 15rem;
+  width: 17rem;
   padding: 1.15rem 0.9rem;
+  display: flex;
+  flex-direction: column;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent 38%), var(--green);
   border-right: 1px solid rgba(231, 213, 154, 0.13);
   box-shadow: 8px 0 28px rgba(1, 26, 16, 0.16);
@@ -36,7 +50,7 @@
   width: 100%;
   margin: 0;
   color: var(--gold);
-  font-size: 1.35rem;
+  font-size: 1.55rem;
   text-align: left;
 }
 
@@ -45,19 +59,22 @@
   gap: 0.35rem;
 }
 
-.links a {
-  min-height: 2.75rem;
-  padding: 0.65rem 0.7rem;
+.links a,
+.sidebarFooter a {
+  min-height: 3.15rem;
+  padding: 0.75rem 0.8rem;
   display: flex;
   align-items: center;
   gap: 0.7rem;
   border-radius: 0.55rem;
   color: var(--gold);
+  font-size: 1.05rem;
   font-weight: 600;
   text-decoration: none;
 }
 
-.links a:hover {
+.links a:hover,
+.sidebarFooter a:hover {
   background: rgba(255, 255, 255, 0.07);
 }
 
@@ -66,12 +83,22 @@
   color: #123f2a;
 }
 
+.sidebarFooter {
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(231, 213, 154, 0.14);
+}
+
 .icon {
-  width: 1.25rem;
-  flex: 0 0 1.25rem;
-  text-align: center;
+  width: 1.65rem;
+  flex: 0 0 1.65rem;
+  display: grid;
+  place-items: center;
+  font-size: 1.45rem;
   font-weight: 800;
 }
+
+.icon :global(.portal-symbol) { font-size: 1.5rem; }
 
 .menuButton,
 .backdrop {
@@ -80,14 +107,14 @@
 
 .main {
   min-height: 100vh;
-  margin-left: 15rem;
-  padding: clamp(1.5rem, 4vw, 4.5rem);
+  margin-left: 17rem;
+  padding: clamp(1.25rem, 2.75vw, 3rem);
   display: flex;
   justify-content: center;
 }
 
 .contentPanel {
-  width: min(100%, 92rem);
+  width: min(100%, 110rem);
   align-self: flex-start;
   padding: clamp(1rem, 2.25vw, 2.25rem);
   border: 1px solid rgba(255, 255, 255, 0.82);
@@ -99,7 +126,7 @@
 
 .hero {
   width: 100%;
-  min-height: clamp(17rem, 30vw, 28rem);
+  min-height: clamp(19rem, 32vw, 32rem);
   padding: clamp(1.5rem, 4vw, 4rem);
   display: flex;
   align-items: center;
@@ -114,8 +141,8 @@
 }
 
 .heroLogo {
-  width: clamp(9rem, 17vw, 15rem);
-  height: clamp(9rem, 17vw, 15rem);
+  width: clamp(10rem, 19vw, 18rem);
+  height: clamp(10rem, 19vw, 18rem);
   flex: 0 0 auto;
   object-fit: contain;
   filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.2));
@@ -127,20 +154,20 @@
 
 .hero h1 {
   margin: 0 0 0.8rem;
-  font-size: clamp(2.3rem, 4.5vw, 5.2rem);
+  font-size: clamp(2.5rem, 5vw, 5.8rem);
   line-height: 0.96;
 }
 
 .hero p {
   margin: 0;
   color: #dce9da;
-  font-size: 1.1rem;
+  font-size: 1.2rem;
 }
 
 .hero .heroSubtitle {
   margin: 0 0 0.75rem;
   color: var(--gold);
-  font-size: clamp(1.25rem, 2vw, 2rem);
+  font-size: clamp(1.4rem, 2.3vw, 2.35rem);
   font-weight: 800;
   letter-spacing: 0.04em;
 }
@@ -154,7 +181,7 @@
 }
 
 .card {
-  min-height: 8rem;
+  min-height: 9rem;
   padding: 1.35rem;
   display: grid;
   grid-template-columns: auto 1fr auto;
@@ -205,27 +232,34 @@
   color: #f7dfaa;
 }
 
+.card.card small,
+.card.card .arrow,
+.card.card .cardIcon {
+  color: inherit;
+}
+
 .callButton {
   width: fit-content;
   max-width: 100%;
-  margin: 1rem auto 0;
-  padding: 0.8rem 1.2rem;
+  margin: 1.15rem auto 0;
+  padding: 0.95rem 1.35rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.75rem;
-  border: 1px solid #c9ad52;
+  gap: 0.9rem;
+  border: 2px solid #c9a83e;
   border-radius: 999px;
   background: #fff9e9;
   color: #17472f;
   text-decoration: none;
-  box-shadow: 0 6px 16px rgba(25, 48, 37, 0.1);
+  box-shadow: 0 10px 24px rgba(25, 48, 37, 0.16);
   transition: transform 150ms ease, background 150ms ease;
 }
 
 .callButton:hover {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
   background: #fff3cf;
+  box-shadow: 0 14px 30px rgba(25, 48, 37, 0.2);
 }
 
 .callButton strong,
@@ -233,14 +267,20 @@
   display: block;
 }
 
+.callButton strong {
+  font-size: 1.25rem;
+}
+
 .callButton small {
   margin-top: 0.1rem;
   color: #6f6441;
+  font-size: 1.05rem;
+  font-weight: 700;
 }
 
 .callIcon {
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 3rem;
+  height: 3rem;
   display: grid;
   place-items: center;
   flex: 0 0 auto;
@@ -250,8 +290,8 @@
 }
 
 .callIcon svg {
-  width: 1.1rem;
-  height: 1.1rem;
+  width: 1.35rem;
+  height: 1.35rem;
 }
 
 .christmasMenuPanel {
@@ -299,7 +339,7 @@
 }
 
 .card strong {
-  font-size: 1.1rem;
+  font-size: 1.22rem;
 }
 
 .card small {
@@ -313,6 +353,12 @@
   font-size: 1.5rem;
 }
 
+.allergenGuide { margin: 1rem 0; padding: .85rem; border: 1px solid #bbcdbf; border-radius: .75rem; background: white; color: #173326; }
+.iconKey { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: .4rem; margin: .7rem 0; padding-bottom: .7rem; border-bottom: 1px solid #dde6df; }
+.iconKey > span { display: grid; place-items: center; gap: .3rem; padding: .4rem .1rem; border-radius: .5rem; background: #f1f6f2; }
+.iconKey b { font-size: .75rem; }
+.allergenBadge.iconBadge { display: grid; place-items: center; height: 2.4rem; min-height: 2.4rem; padding: .25rem; border-radius: .4rem; }
+.iconBadge :global(.portal-symbol) { font-size: 1.5rem; line-height: 1; }
 .allergenHero {
   min-height: clamp(15rem, 24vw, 23rem);
 }
@@ -644,11 +690,13 @@
     display: block;
   }
 
-  .links a {
+  .links a,
+  .sidebarFooter a {
     justify-content: center;
   }
 
-  .sidebarOpen .links a {
+  .sidebarOpen .links a,
+  .sidebarOpen .sidebarFooter a {
     justify-content: flex-start;
   }
 
@@ -689,8 +737,19 @@
   }
 
   .callButton {
-    width: 100%;
-    border-radius: 0.8rem;
+    width: fit-content;
+    max-width: 100%;
+    padding: 0.85rem;
+    border-radius: 999px;
+  }
+
+  .callButton strong {
+    font-size: 1rem;
+  }
+
+  .callIcon {
+    width: 2.6rem;
+    height: 2.6rem;
   }
 
   .christmasCard::after {
@@ -725,4 +784,15 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
   }
+
+  .allergenGrid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: .45rem; }
+  .allergenCard { min-width: 0; padding: .55rem; overflow-wrap: anywhere; display: grid; grid-template-rows: subgrid; grid-row: span 7; row-gap: .45rem; }
+  .allergenCard > .category { grid-row: 1; font-size: .6rem; }
+  .allergenCard h2 { grid-row: 2; margin: 0; font-size: .85rem; line-height: 1.25; }
+  .allergenCard > .badgeGrid { grid-row: 3; gap: .25rem; margin: 0; }
+  .allergenCard > .vegetarianRow { grid-row: 4; margin: 0; padding: 0; font-size: .7rem; }
+  .allergenCard > .preparationNote { grid-row: 5; font-size: .7rem; }
+  .allergenCard > .sideBox { grid-row: 6; font-size: .7rem; padding: .4rem; }
+  .allergenCard > .ingredients { grid-row: 7; font-size: .75rem; }
+  .allergenCard .vegetarianPill { padding: .25rem; font-size: .65rem; }
 }

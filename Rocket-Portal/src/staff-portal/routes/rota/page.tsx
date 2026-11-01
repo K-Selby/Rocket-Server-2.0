@@ -334,6 +334,20 @@ function errorMessage(
 }
 
 export default function RotaPage() {
+  const [mobileAdding, setMobileAdding] = useState<string | null>(null);
+
+  async function saveMobileShift(member: StaffMember, day: string, value: string, existing?: RotaShift) {
+    if (value.trim() === formatShift(existing)) { setMobileAdding(null); return; }
+    const parsed = value.trim() ? parseShift(value.trim()) : null;
+    if (value.trim() && !parsed) { setError("Use a shift such as 12-3, 5-F or K."); return; }
+    try {
+      if (parsed) await saveShift(member, day, parsed, existing);
+      else if (existing) await removeShift(existing);
+      setMobileAdding(null);
+      setError("");
+      setNotice("Changes saved automatically.");
+    } catch { setError("The shift could not be saved. Please try again."); }
+  }
   const {
     currentUser,
     loadingUser,
@@ -2545,7 +2559,22 @@ export default function RotaPage() {
                       </header>
 
                       <div className="rota-mobile-shifts">
-                        {dayEntries.length === 0 ? (
+                        {isEditing ? [...visibleStaff].sort((a,b) => {
+                          const rank = (member: StaffMember) => isApprovedDayOff(member.id, day) ? 2 : findShifts(member.id, day).length ? 0 : 1;
+                          return rank(a)-rank(b) || a.name.localeCompare(b.name);
+                        }).map(member => {
+                          const entries = findShifts(member.id, day);
+                          const off = isApprovedDayOff(member.id, day);
+                          const key = `${member.id}-${day}`;
+                          return <div className={`rota-mobile-edit-row ${off ? "rota-mobile-off-row" : ""}`} key={member.id}>
+                            <span>{member.name}</span>
+                            {off ? <strong>Off</strong> : <div className="rota-mobile-inline-shifts">
+                              {entries.map(shift => <input key={`${shift.id}-${formatShift(shift)}`} aria-label={`${member.name} shift on ${day}`} defaultValue={formatShift(shift)} autoComplete="off" autoCorrect="off" spellCheck={false} enterKeyHint="done" onFocus={event => { const input=event.currentTarget; setTimeout(()=>input.scrollIntoView({block:"center",behavior:"smooth"}),350); }} onBlur={event=>void saveMobileShift(member,day,event.target.value,shift)} onKeyDown={event=>{if(event.key==="Enter")event.currentTarget.blur();}} />)}
+                              {mobileAdding===key && <input autoFocus aria-label={`New shift for ${member.name} on ${day}`} autoComplete="off" autoCorrect="off" spellCheck={false} enterKeyHint="done" onFocus={event=>{const input=event.currentTarget;setTimeout(()=>input.scrollIntoView({block:"center",behavior:"smooth"}),350);}} onBlur={event=>void saveMobileShift(member,day,event.target.value)} onKeyDown={event=>{if(event.key==="Enter")event.currentTarget.blur();}} />}
+                              <button type="button" className="rota-mobile-inline-add" aria-label={`Add shift for ${member.name} on ${day}`} onClick={()=>setMobileAdding(key)}><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg></button>
+                            </div>}
+                          </div>;
+                        }) : dayEntries.length === 0 ? (
                           <p>No one working</p>
                         ) : dayEntries.map(({ member, shift }) => (
                           <button

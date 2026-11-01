@@ -9,7 +9,7 @@ import RocketLogo from "./RocketBrand";
 type BookingLink = {
   href: string;
   label: string;
-  icon: "dashboard" | "booking" | "party" | "customer" | "allergen" | "table" | "archive" | "layout" | "external";
+  icon: "dashboard" | "booking" | "party" | "customer" | "allergen" | "menu" | "table" | "archive" | "layout" | "external";
   managerOnly?: boolean;
 };
 
@@ -17,7 +17,6 @@ const bookingLinks: BookingLink[] = [
   { href: "/booking", label: "Dashboard", icon: "dashboard" },
   { href: "/booking/bookings", label: "Table Bookings", icon: "booking" },
   { href: "/booking/large-parties", label: "Large Parties", icon: "party" },
-  { href: "/booking/customers", label: "Customers", icon: "customer" },
   { href: "/booking/allergens", label: "Allergen Menu", icon: "allergen" },
   { href: "/booking/tables", label: "Tables", icon: "table", managerOnly: true },
   { href: "/booking/archive", label: "Archive", icon: "archive", managerOnly: true },
@@ -31,6 +30,7 @@ function BookingIcon({ name }: { name: BookingLink["icon"] }) {
     party: <><circle cx="8" cy="8" r="3" /><circle cx="17" cy="9" r="2.5" /><path d="M2 21v-2a6 6 0 0 1 12 0v2M14 16a5 5 0 0 1 8 4v1" /></>,
     customer: <><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></>,
     allergen: <><path d="M12 3c4 4 6 7 6 11a6 6 0 0 1-12 0c0-4 2-7 6-11Z" /><path d="M9 15c1 1 2 1.5 3 1.5s2-.5 3-1.5" /></>,
+    menu: <><path d="M5 3h14a2 2 0 0 1 2 2v16H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M8 8h8M8 12h8M8 16h5"/></>,
     table: <><path d="M4 7h16M6 7l-2 14M18 7l2 14M8 12h8" /></>,
     archive: <><path d="M3 6h18M5 6v15h14V6M4 3h16v3M9 11h6" /></>,
     layout: <><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M9 3v18M9 10h12M15 10v11" /></>,
@@ -88,7 +88,10 @@ export default function BookingNavigation() {
         {visibleLinks.map(link => <Link key={link.href} href={link.href} className={active(link.href) ? "active" : ""} onClick={() => setMobileMenuOpen(false)}><BookingIcon name={link.icon} /><span className="sidebar-link-label">{link.label}</span></Link>)}
       </nav>
 
-      <div className="sidebar-bottom"><Link href="/staff/rota"><BookingIcon name="external" /><span className="sidebar-link-label">Staff Portal</span><span className="sidebar-link-label">→</span></Link></div>
+      <div className="sidebar-bottom">
+        <Link href="/"><BookingIcon name="external" /><span className="sidebar-link-label">Customer Portal</span><span className="sidebar-link-label">→</span></Link>
+        <Link href="/staff/rota"><BookingIcon name="external" /><span className="sidebar-link-label">Staff Portal</span><span className="sidebar-link-label">→</span></Link>
+      </div>
     </aside>
     {mobileMenuOpen && <button type="button" className="mobile-sidebar-backdrop" aria-label="Close navigation" onClick={() => setMobileMenuOpen(false)} />}
   </>;

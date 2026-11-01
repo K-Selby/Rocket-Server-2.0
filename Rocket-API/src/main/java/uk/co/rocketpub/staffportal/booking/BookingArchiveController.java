@@ -32,6 +32,52 @@ public class BookingArchiveController {
           "pastLargeParties",largeParties("lp.status!='Cancelled' AND lp.event_date IS NOT NULL AND lp.event_date<=?",search,LocalDate.now().minusDays(2).toString()));
     }
 
+    private void ensureBlacklist() {
+        jdbc.execute("CREATE TABLE IF NOT EXISTS customer_blacklist (phone TEXT PRIMARY KEY, name TEXT NOT NULL, reason TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)");
+    }
+
+    @GetMapping("/customers")
+    public List<Map<String,Object>> customers(@RequestParam(defaultValue="") String q, @RequestParam(defaultValue="0") int page, HttpSession session) {
+        requireManager(session); ensureBlacklist();
+        if(q.trim().length()<2)return List.of();
+        String search="%"+q.trim().toLowerCase()+"%";
+        return jdbc.queryForList("""
+            SELECT c.id,c.name,c.phone,bl.reason blacklist_reason,bl.phone blacklisted_phone
+            FROM customer c LEFT JOIN customer_blacklist bl ON bl.phone=c.phone
+            WHERE lower(c.name) LIKE ? OR c.phone LIKE ? ORDER BY lower(c.name),c.id LIMIT 11 OFFSET ?
+            """,search,search,Math.max(0,page)*10);
+    }
+
+    @GetMapping("/customers/{id}/history")
+    public List<Map<String,Object>> customerHistory(@PathVariable long id,HttpSession session) {
+        requireManager(session);
+        return jdbc.queryForList("""
+            SELECT b.id,b.booking_date event_date,b.booking_time event_time,b.party_size,b.status,'Table booking' kind
+            FROM booking b WHERE b.customer_id=? AND b.booking_date<date('now','localtime')
+            UNION ALL
+            SELECT lp.id,lp.event_date,lp.event_time,lp.party_size,lp.status,'Large party' kind
+            FROM large_party_inquiry lp JOIN customer c ON c.id=? AND c.phone=lp.customer_phone
+            WHERE lp.event_date<date('now','localtime')
+            ORDER BY event_date DESC,event_time DESC
+            """,id,id);
+    }
+
+    @GetMapping("/blacklist")
+    public List<Map<String,Object>> blacklist(@RequestParam(defaultValue="") String q,@RequestParam(defaultValue="0") int page,HttpSession session) {
+        requireManager(session);ensureBlacklist();String search="%"+q.trim().toLowerCase()+"%";
+        return jdbc.queryForList("SELECT * FROM customer_blacklist WHERE lower(name) LIKE ? OR phone LIKE ? ORDER BY name,phone LIMIT 11 OFFSET ?",search,search,Math.max(0,page)*10);
+    }
+
+    public record BlacklistRequest(String name,String phone,String reason,boolean blocked) {}
+
+    @PutMapping("/blacklist")
+    public void blacklist(@org.springframework.web.bind.annotation.RequestBody BlacklistRequest request,HttpSession session) {
+        requireManager(session);ensureBlacklist();String phone=request.phone()==null?"":request.phone().replaceAll("\\D","");
+        if(phone.isBlank())throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Enter a phone number.");
+        if(!request.blocked()){jdbc.update("DELETE FROM customer_blacklist WHERE phone=?",phone);return;}
+        jdbc.update("INSERT INTO customer_blacklist(phone,name,reason) VALUES(?,?,?) ON CONFLICT(phone) DO UPDATE SET name=excluded.name,reason=excluded.reason",phone,request.name()==null?"":request.name().trim(),request.reason());
+    }
+
     @PutMapping("/bookings/{id}/restore")
     public Map<String,Boolean> restoreBooking(@PathVariable long id,HttpSession session){requireManager(session);if(jdbc.update("UPDATE booking SET status='Booked',completed_at=NULL WHERE id=? AND status='Cancelled'",id)==0)throw new ResponseStatusException(HttpStatus.NOT_FOUND,"Cancelled booking not found.");return Map.of("restored",true);}
 
