@@ -130,7 +130,7 @@ export default function AllergenMenu() {
 
           <aside className={styles.allergenWarning}>
             <strong>Important allergen information</strong>
-            <span>Please speak to a member of staff before ordering if you have an allergy or intolerance. Information can change when ingredients or suppliers change.</span>
+            <span>Please speak to a member of staff before ordering if you have an allergy or intolerance. Information can change when ingredients or suppliers change. Always check sides and accompaniments for possible allergens.</span>
           </aside>
 
           <form className={styles.filterPanel} onSubmit={submitFilters}>
@@ -162,9 +162,9 @@ export default function AllergenMenu() {
                 <span className="booking-page-kicker">{item.category}</span><h2>{item.name}</h2>
                 <div className="staff-allergen-badges"><AllergenBadge label="Milk" status={item.milkStatus} /><AllergenBadge label="Nuts" status={item.nutsStatus} /><AllergenBadge label="Egg" status={item.eggStatus} /><AllergenBadge label="Gluten" status={item.glutenStatus} /></div>
                 <div className="staff-diet-row">{item.vegetarian ? <span>Vegetarian</span> : item.canMakeVegetarian ? <span>Can be made vegetarian</span> : null}{item.canMakeGlutenFree&&<span>Can be gluten free</span>}</div>
-                {item.canMakeGlutenFree && <div className={styles.preparationNote}><strong>*Can be made gluten free when ordered as such.</strong>{item.glutenFreeChanges && <span>{item.glutenFreeChanges}</span>}</div>}
+                {item.canMakeGlutenFree && <div className={styles.preparationNote}><strong>*Can be made gluten free when ordered as such.</strong></div>}
                 {item.category === "Main Meals" && item.sides.length > 0 && <div className={styles.sideBox}><strong>{hasFreeFilter ? "Safer sides for selected allergen filters" : "Available sides"}</strong>{safeSides.length > 0 ? <div className={styles.sideList}>{safeSides.map(side => <span key={side.id}>{side.name}</span>)}</div> : <p>No linked side is strictly free from every selected allergen.</p>}</div>}
-                {item.ingredients && <details className={styles.ingredients}><summary>Main ingredients</summary><p>{item.ingredients.split("\n").filter(Boolean).join(", ")}</p></details>}
+                {item.ingredients && <details className={styles.ingredients}><summary>Possible Sides &amp; Accompaniments</summary><p>{item.ingredients.split("\n").filter(Boolean).join(", ")}</p></details>}
               </article>;
             })}
             {filteredItems.length === 0 && <div className={styles.statusCard}><strong>No matching meals</strong><p>Try removing a filter.</p></div>}
